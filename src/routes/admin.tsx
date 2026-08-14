@@ -45,6 +45,7 @@ function AdminPage() {
         right={
           <Link
             to="/espera"
+            search={{ id: undefined }}
             className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
           >
             <ExternalLink className="h-4 w-4" />

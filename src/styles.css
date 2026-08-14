@@ -4,6 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility animate-pulse-slow {
+  animation: ipr-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes ipr-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--success) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 14px color-mix(in oklab, var(--success) 0%, transparent);
+  }
+}
+
+
 /*
  * Design system definition.
  *

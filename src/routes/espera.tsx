@@ -9,8 +9,9 @@ import { getQueuePosition } from "@/lib/queue-store";
 
 export const Route = createFileRoute("/espera")({
   validateSearch: (search: Record<string, unknown>) => ({
-    id: typeof search.id === "string" ? search.id : "",
+    id: typeof search["id"] === "string" ? (search["id"] as string) : undefined,
   }),
+
   head: () => ({
     meta: [
       { title: "Sala de Espera Virtual | Instituto Pedro Ruiz" },

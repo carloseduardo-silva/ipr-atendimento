@@ -55,6 +55,7 @@ function Index() {
 
           <Link
             to="/espera"
+            search={{ id: undefined }}
             className="group rounded-2xl border border-border bg-card p-6 text-left transition hover:border-primary"
           >
             <HeartPulse className="h-6 w-6 text-primary" />
