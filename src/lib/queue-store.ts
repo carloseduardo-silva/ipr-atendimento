@@ -5,7 +5,7 @@ import type { Patient } from "@/types/patient";
  *
  * Hoje persiste em localStorage e sincroniza entre abas pelo evento `storage`,
  * simulando um canal realtime. A API é assíncrona de propósito: para migrar
- * para Lovable Cloud / Supabase Realtime basta reimplementar as funções abaixo
+ * para Supabase Realtime basta reimplementar as funções abaixo
  * (listPatients, addPatient, callNext, resetQueue, subscribe) sem tocar na UI.
  */
 

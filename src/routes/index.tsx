@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, HeartPulse, MonitorCog } from "lucide-react";
-import logoAsset from "@/assets/logo-ipr.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +26,7 @@ function Index() {
     <div className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
       <div className="w-full max-w-xl text-center">
         <img
-          src={logoAsset.url}
+          src="/images/logo-ipr.png"
           alt="Instituto Pedro Ruiz"
           className="mx-auto h-14 w-auto"
         />
