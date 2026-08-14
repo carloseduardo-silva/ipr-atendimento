@@ -79,8 +79,10 @@ export function getSnapshot(): Patient[] {
   return cache;
 }
 
+const EMPTY: Patient[] = [];
+
 export function getServerSnapshot(): Patient[] {
-  return [];
+  return EMPTY;
 }
 
 export function subscribe(listener: Listener): () => void {
