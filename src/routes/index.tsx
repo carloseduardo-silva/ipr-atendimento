@@ -37,22 +37,7 @@ function Index() {
           Escolha por onde deseja entrar.
         </p>
 
-        <div className="mx-auto mt-8 max-w-sm">
-          <Link
-            to="/espera"
-            search={{ id: undefined }}
-            className="group rounded-2xl border border-border bg-card p-6 text-left transition hover:border-primary"
-          >
-            <HeartPulse className="h-6 w-6 text-primary" />
-            <p className="mt-3 font-semibold text-foreground">Sala de espera</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Visão da paciente com posição na fila.
-            </p>
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary">
-              Abrir <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-        </div>
+       
       </div>
     </div>
   );
