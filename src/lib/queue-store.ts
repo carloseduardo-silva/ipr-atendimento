@@ -184,6 +184,20 @@ export async function resetQueue(): Promise<void> {
   await refetch();
 }
 
+/** Apaga definitivamente a paciente da fila. Destrutivo — confirme antes de chamar. */
+export async function removePatient(id: string): Promise<void> {
+  ensureInit();
+
+  const { error } = await supabase.from(TABLE).delete().eq("id", id);
+
+  if (error) {
+    reportError("Não foi possível excluir a paciente.", error);
+    return;
+  }
+
+  await refetch();
+}
+
 /** Ordena a fila de espera por ordem de chegada. */
 export function sortWaiting(patients: Patient[]): Patient[] {
   return patients

@@ -56,11 +56,11 @@ function EsperaPage() {
           </section>
         ) : (
           <>
-            <h1 className="text-2xl font-semibold text-foreground">
+            <h1 className="text-center text-2xl font-semibold text-foreground">
               Olá, {patient.nome}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Bem-vinda à sala de espera virtual do Instituto Pedro Ruiz.
+            <p className="mt-1 text-center text-sm text-muted-foreground">
+              Bem-vinda à sala de espera virtual.
             </p>
 
             <div className="mt-6">

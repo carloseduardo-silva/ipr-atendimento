@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ExternalLink, LogOut, Trash2 } from "lucide-react";
+import { ExternalLink, LogOut } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { isAuthenticated, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -8,8 +8,9 @@ import { AddPatientForm } from "@/components/admin/AddPatientForm";
 import { PatientLinkCard } from "@/components/admin/PatientLinkCard";
 import { QueueList } from "@/components/admin/QueueList";
 import { CurrentPatientCard } from "@/components/admin/CurrentPatientCard";
+import { ClearQueueDialog } from "@/components/admin/ClearQueueDialog";
 import { useQueue } from "@/hooks/use-queue";
-import { callNext, resetQueue, sortWaiting } from "@/lib/queue-store";
+import { callNext, removePatient, resetQueue, sortWaiting } from "@/lib/queue-store";
 import type { Patient } from "@/types/patient";
 
 export const Route = createFileRoute("/admin")({
@@ -102,8 +103,12 @@ function AdminPage() {
           </div>
 
           <div className="space-y-5">
-            <CurrentPatientCard patient={current} />
-            <QueueList waiting={waiting} onCallNext={() => void callNext()} />
+            <CurrentPatientCard patient={current} onDelete={(id) => void removePatient(id)} />
+            <QueueList
+              waiting={waiting}
+              onCallNext={() => void callNext()}
+              onDelete={(id) => void removePatient(id)}
+            />
 
             {done.length > 0 ? (
               <details className="rounded-2xl border border-border bg-card p-5">
@@ -115,22 +120,7 @@ function AdminPage() {
                     <li key={p.id}>{p.nome}</li>
                   ))}
                 </ul>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Apagar todas as pacientes da fila? Esta ação remove os registros do banco e afeta todas as telas abertas.",
-                      )
-                    ) {
-                      void resetQueue();
-                    }
-                  }}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-destructive/40 px-3 py-2 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Limpar fila
-                </button>
+                <ClearQueueDialog onConfirm={() => void resetQueue()} />
               </details>
             ) : null}
           </div>

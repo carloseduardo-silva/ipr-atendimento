@@ -1,11 +1,14 @@
-import { Video } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ExternalLink, Video } from "lucide-react";
 import type { Patient } from "@/types/patient";
+import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
 
 interface CurrentPatientCardProps {
   patient: Patient | null;
+  onDelete: (id: string) => void;
 }
 
-export function CurrentPatientCard({ patient }: CurrentPatientCardProps) {
+export function CurrentPatientCard({ patient, onDelete }: CurrentPatientCardProps) {
   return (
     <section
       className={`rounded-2xl border p-6 ${
@@ -26,6 +29,20 @@ export function CurrentPatientCard({ patient }: CurrentPatientCardProps) {
               A paciente já foi avisada na sala de espera.
             </p>
           </div>
+        </div>
+      ) : null}
+      {patient ? (
+        <div className="mt-4 flex items-center gap-2">
+          <Link
+            to="/espera"
+            search={{ id: patient.id }}
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Abrir sala de espera
+          </Link>
+          <DeletePatientDialog patient={patient} onConfirm={() => onDelete(patient.id)} />
         </div>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">

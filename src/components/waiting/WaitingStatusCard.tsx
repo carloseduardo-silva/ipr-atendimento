@@ -33,7 +33,7 @@ export function WaitingStatusCard({ position }: WaitingStatusCardProps) {
 
       <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <RefreshCw className="h-3 w-3 animate-spin [animation-duration:3s]" />
-        Atualizando automaticamente. Mantenha esta tela aberta.
+        Atualizando automaticamente.<span className="hidden sm:inline"> Mantenha esta tela aberta.</span>
       </p>
     </section>
   );
