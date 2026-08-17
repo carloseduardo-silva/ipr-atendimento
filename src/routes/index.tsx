@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, HeartPulse, MonitorCog } from "lucide-react";
+import { ArrowRight, HeartPulse } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,21 +37,7 @@ function Index() {
           Escolha por onde deseja entrar.
         </p>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <Link
-            to="/admin"
-            className="group rounded-2xl border border-border bg-card p-6 text-left transition hover:border-primary"
-          >
-            <MonitorCog className="h-6 w-6 text-primary" />
-            <p className="mt-3 font-semibold text-foreground">Painel do atendente</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Adicionar pacientes e gerenciar a fila.
-            </p>
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary">
-              Abrir <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-
+        <div className="mx-auto mt-8 max-w-sm">
           <Link
             to="/espera"
             search={{ id: undefined }}

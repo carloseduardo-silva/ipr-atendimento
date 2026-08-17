@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, LogOut, Trash2 } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
+import { isAuthenticated, signOut } from "@/lib/auth";
 import { AddPatientForm } from "@/components/admin/AddPatientForm";
 import { PatientLinkCard } from "@/components/admin/PatientLinkCard";
 import { QueueList } from "@/components/admin/QueueList";
@@ -27,12 +28,24 @@ export const Route = createFileRoute("/admin")({
       },
     ],
   }),
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+  },
   component: AdminPage,
 });
 
 function AdminPage() {
+  const router = useRouter();
   const patients = useQueue();
   const [lastAdded, setLastAdded] = useState<Patient | null>(null);
+
+  async function handleSignOut() {
+    await signOut();
+    await router.invalidate();
+    await router.navigate({ to: "/login" });
+  }
 
   const waiting = sortWaiting(patients);
   const current = patients.find((p) => p.status === "em_atendimento") ?? null;
@@ -43,14 +56,24 @@ function AdminPage() {
       <ClinicHeader
         subtitle="Painel de gestão da fila"
         right={
-          <Link
-            to="/espera"
-            search={{ id: undefined }}
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Ver sala de espera
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/espera"
+              search={{ id: undefined }}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Ver sala de espera
+            </Link>
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
+          </div>
         }
       />
 
