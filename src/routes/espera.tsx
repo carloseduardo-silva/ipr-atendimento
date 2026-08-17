@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { WaitingStatusCard } from "@/components/waiting/WaitingStatusCard";
 import { NowServingCard } from "@/components/waiting/NowServingCard";
 import { FaqCarousel } from "@/components/waiting/FaqCarousel";
-import { useQueue } from "@/hooks/use-queue";
-import { getQueuePosition } from "@/lib/queue-store";
+import { usePatientQueueStatus } from "@/hooks/use-patient-queue-status";
 
 export const Route = createFileRoute("/espera")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -32,16 +31,21 @@ export const Route = createFileRoute("/espera")({
 
 function EsperaPage() {
   const { id } = Route.useSearch();
-  const patients = useQueue();
-  const patient = patients.find((p) => p.id === id) ?? null;
-  const position = patient ? getQueuePosition(patients, patient.id) : 0;
+  const { patient, position, loading } = usePatientQueueStatus(id);
 
   return (
     <div className="min-h-screen bg-background">
       <ClinicHeader />
 
       <main className="mx-auto w-full max-w-lg px-5 pb-14 pt-7">
-        {!patient ? (
+        {loading ? (
+          <section className="rounded-3xl border border-border bg-card p-7 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <p className="mt-3 text-sm text-muted-foreground">
+              Carregando sua posição na fila…
+            </p>
+          </section>
+        ) : !patient ? (
           <section className="rounded-3xl border border-border bg-card p-7 text-center">
             <h1 className="text-xl font-semibold text-foreground">
               Não encontramos o seu cadastro

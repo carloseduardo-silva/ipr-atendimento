@@ -29,20 +29,20 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!username.trim() || !password || submitting) return;
+    if (!email.trim() || !password || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      const ok = await signIn(username, password);
-      if (!ok) {
-        setError("Usuário ou senha inválidos.");
+      const result = await signIn(email, password);
+      if (!result.ok) {
+        setError(result.message);
         return;
       }
       await router.invalidate();
@@ -63,18 +63,19 @@ function LoginPage() {
         >
           <h1 className="text-lg font-semibold text-foreground">Entrar no painel</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Informe as credenciais da equipe para gerenciar a fila.
+            Informe o e-mail e a senha da equipe para gerenciar a fila.
           </p>
 
-          <label htmlFor="usuario" className="mt-5 block text-sm font-medium text-foreground">
-            Usuário
+          <label htmlFor="email" className="mt-5 block text-sm font-medium text-foreground">
+            E-mail
           </label>
           <input
-            id="usuario"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Ex.: admin"
-            autoComplete="username"
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Ex.: recepcao@institutopedroruiz.com.br"
+            autoComplete="email"
             className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
           />
 
@@ -99,7 +100,7 @@ function LoginPage() {
 
           <button
             type="submit"
-            disabled={!username.trim() || !password || submitting}
+            disabled={!email.trim() || !password || submitting}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <LogIn className="h-4 w-4" />

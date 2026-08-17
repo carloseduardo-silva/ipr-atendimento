@@ -1,76 +1,76 @@
+import { toast } from "sonner";
 import type { Patient } from "@/types/patient";
+import { COLUMNS, TABLE, supabase, toPatient, type PacienteFilaRow } from "@/lib/supabase";
 
 /**
- * Camada de acesso à fila.
+ * Camada de acesso à fila (visão do painel `/admin`).
  *
- * Hoje persiste em localStorage e sincroniza entre abas pelo evento `storage`,
- * simulando um canal realtime. A API é assíncrona de propósito: para migrar
- * para Supabase Realtime basta reimplementar as funções abaixo
- * (listPatients, addPatient, callNext, resetQueue, subscribe) sem tocar na UI.
+ * Persiste na tabela `pacientes_fila` do Supabase e mantém um cache local
+ * sincronizado por Supabase Realtime: qualquer INSERT/UPDATE/DELETE na tabela
+ * dispara um refetch e notifica os assinantes (`useQueue`).
+ *
+ * A API pública é a mesma de antes (localStorage), então os componentes de UI
+ * não precisam conhecer o banco.
+ *
+ * Atenção: este módulo carrega a fila inteira, incluindo nomes. Use-o apenas
+ * em telas autenticadas. A sala de espera da paciente usa
+ * `use-patient-queue-status`, que consulta somente a própria linha.
  */
-
-const STORAGE_KEY = "ipr.queue.v1";
-const CHANNEL_NAME = "ipr-queue";
 
 type Listener = (patients: Patient[]) => void;
 
 const listeners = new Set<Listener>();
 let cache: Patient[] = [];
-let channel: BroadcastChannel | null = null;
 let initialized = false;
 
 const isBrowser = () => typeof window !== "undefined";
-
-function read(): Patient[] {
-  if (!isBrowser()) return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Patient[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function write(patients: Patient[]) {
-  cache = patients;
-  if (isBrowser()) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-    channel?.postMessage("update");
-  }
-  emit();
-}
 
 function emit() {
   for (const listener of listeners) listener(cache);
 }
 
+/** Reporta a falha para a atendente — as chamadas na UI são fire-and-forget. */
+function reportError(message: string, error: unknown): void {
+  console.error(message, error);
+  toast.error(message);
+}
+
+async function fetchPatients(): Promise<Patient[] | null> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(COLUMNS)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    reportError("Não foi possível carregar a fila.", error);
+    return null;
+  }
+
+  return (data as PacienteFilaRow[]).map(toPatient);
+}
+
+/** Recarrega a fila do banco e avisa os assinantes. */
+async function refetch(): Promise<void> {
+  const patients = await fetchPatients();
+  if (!patients) return;
+  cache = patients;
+  emit();
+}
+
 function ensureInit() {
   if (initialized || !isBrowser()) return;
   initialized = true;
-  cache = read();
 
-  window.addEventListener("storage", (event) => {
-    if (event.key && event.key !== STORAGE_KEY) return;
-    cache = read();
-    emit();
-  });
+  void refetch();
 
-  if (typeof BroadcastChannel !== "undefined") {
-    channel = new BroadcastChannel(CHANNEL_NAME);
-    channel.onmessage = () => {
-      cache = read();
-      emit();
-    };
-  }
-}
-
-function createId(): string {
-  if (isBrowser() && typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  supabase
+    .channel("pacientes_fila_admin")
+    .on("postgres_changes", { event: "*", schema: "public", table: TABLE }, () => {
+      // Um refetch completo por evento é suficiente para o volume do MVP e
+      // evita erros de merge incremental dos payloads.
+      void refetch();
+    })
+    .subscribe();
 }
 
 /** Snapshot síncrono usado pelo hook (useSyncExternalStore). */
@@ -93,42 +93,95 @@ export function subscribe(listener: Listener): () => void {
 
 export async function listPatients(): Promise<Patient[]> {
   ensureInit();
+  const patients = await fetchPatients();
+  if (patients) {
+    cache = patients;
+    emit();
+  }
   return cache;
 }
 
+/** Insere a paciente enviando apenas o nome: id, status e created_at têm default no banco. */
 export async function addPatient(nome: string): Promise<Patient> {
   ensureInit();
-  const patient: Patient = {
-    id: createId(),
-    nome: nome.trim(),
-    status: "aguardando",
-    createdAt: Date.now(),
-  };
-  write([...cache, patient]);
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({ nome: nome.trim() })
+    .select(COLUMNS)
+    .single();
+
+  if (error || !data) {
+    reportError("Não foi possível adicionar a paciente.", error);
+    throw error ?? new Error("INSERT em pacientes_fila não retornou a linha criada.");
+  }
+
+  const patient = toPatient(data as PacienteFilaRow);
+  await refetch();
   return patient;
 }
 
-/** Conclui o atendimento atual e promove o primeiro da fila. */
+/** Conclui o atendimento atual e promove a primeira da fila. */
 export async function callNext(): Promise<Patient | null> {
   ensureInit();
-  const waiting = cache
-    .filter((p) => p.status === "aguardando")
-    .sort((a, b) => a.createdAt - b.createdAt);
-  const next = waiting[0] ?? null;
 
-  const updated = cache.map((p) => {
-    if (p.status === "em_atendimento") return { ...p, status: "concluido" as const };
-    if (next && p.id === next.id) return { ...p, status: "em_atendimento" as const };
-    return p;
-  });
+  const { error: concludeError } = await supabase
+    .from(TABLE)
+    .update({ status: "concluido" })
+    .eq("status", "em_atendimento");
 
-  write(updated);
-  return next;
+  if (concludeError) {
+    reportError("Não foi possível concluir o atendimento atual.", concludeError);
+    return null;
+  }
+
+  const { data: nextRow, error: nextError } = await supabase
+    .from(TABLE)
+    .select(COLUMNS)
+    .eq("status", "aguardando")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (nextError) {
+    reportError("Não foi possível encontrar a próxima paciente.", nextError);
+    return null;
+  }
+
+  if (!nextRow) {
+    await refetch();
+    return null;
+  }
+
+  const next = nextRow as PacienteFilaRow;
+  const { data: updated, error: promoteError } = await supabase
+    .from(TABLE)
+    .update({ status: "em_atendimento" })
+    .eq("id", next.id)
+    .select(COLUMNS)
+    .single();
+
+  if (promoteError || !updated) {
+    reportError("Não foi possível chamar a próxima paciente.", promoteError);
+    return null;
+  }
+
+  await refetch();
+  return toPatient(updated as PacienteFilaRow);
 }
 
+/** Apaga todas as pacientes da tabela. Destrutivo e compartilhado — confirme antes de chamar. */
 export async function resetQueue(): Promise<void> {
   ensureInit();
-  write([]);
+
+  const { error } = await supabase.from(TABLE).delete().not("id", "is", null);
+
+  if (error) {
+    reportError("Não foi possível limpar a fila.", error);
+    return;
+  }
+
+  await refetch();
 }
 
 /** Ordena a fila de espera por ordem de chegada. */
