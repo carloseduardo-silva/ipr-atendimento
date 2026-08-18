@@ -1,5 +1,14 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Clock, ExternalLink, PhoneCall, Users } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  ExternalLink,
+  Loader2,
+  PhoneCall,
+  Users,
+} from "lucide-react";
 import type { Patient } from "@/types/patient";
 import { ESTIMATED_MINUTES_PER_PATIENT } from "@/types/patient";
 import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
@@ -11,15 +20,36 @@ function formatTime(timestamp: number) {
   });
 }
 
+type MoveDirection = "up" | "down";
+
+const ARROW_CLASS =
+  "inline-flex h-6 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-muted-foreground";
+
 interface QueueItemProps {
   patient: Patient;
   position: number;
   isNext: boolean;
+  isLast: boolean;
+  /** Direção em andamento nesta paciente, ou null. */
+  movingDirection: MoveDirection | null;
+  /** Trava as setas enquanto qualquer reordenação está em andamento. */
+  moveDisabled: boolean;
+  onMove: (direction: MoveDirection) => void;
   onCallNext: () => void;
   onDelete: (id: string) => void;
 }
 
-function QueueItem({ patient, position, isNext, onCallNext, onDelete }: QueueItemProps) {
+function QueueItem({
+  patient,
+  position,
+  isNext,
+  isLast,
+  movingDirection,
+  moveDisabled,
+  onMove,
+  onCallNext,
+  onDelete,
+}: QueueItemProps) {
   return (
     <li
       className={`flex items-center gap-4 rounded-2xl border p-4 transition ${
@@ -44,6 +74,36 @@ function QueueItem({ patient, position, isNext, onCallNext, onDelete }: QueueIte
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => onMove("up")}
+            disabled={isNext || moveDisabled}
+            aria-label={`Mover ${patient.nome} para cima`}
+            title="Mover para cima"
+            className={ARROW_CLASS}
+          >
+            {movingDirection === "up" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove("down")}
+            disabled={isLast || moveDisabled}
+            aria-label={`Mover ${patient.nome} para baixo`}
+            title="Mover para baixo"
+            className={ARROW_CLASS}
+          >
+            {movingDirection === "down" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+        </div>
         {isNext ? (
           <button
             type="button"
@@ -74,9 +134,22 @@ interface QueueListProps {
   waiting: Patient[];
   onCallNext: () => void;
   onDelete: (id: string) => void;
+  onMove: (currentIndex: number, direction: MoveDirection) => Promise<void>;
 }
 
-export function QueueList({ waiting, onCallNext, onDelete }: QueueListProps) {
+export function QueueList({ waiting, onCallNext, onDelete, onMove }: QueueListProps) {
+  const [moving, setMoving] = useState<{ id: string; direction: MoveDirection } | null>(null);
+
+  async function handleMove(patient: Patient, index: number, direction: MoveDirection) {
+    if (moving) return;
+    setMoving({ id: patient.id, direction });
+    try {
+      await onMove(index, direction);
+    } finally {
+      setMoving(null);
+    }
+  }
+
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="flex items-center justify-between">
@@ -101,6 +174,10 @@ export function QueueList({ waiting, onCallNext, onDelete }: QueueListProps) {
               patient={patient}
               position={index + 1}
               isNext={index === 0}
+              isLast={index === waiting.length - 1}
+              movingDirection={moving?.id === patient.id ? moving.direction : null}
+              moveDisabled={moving !== null}
+              onMove={(direction) => void handleMove(patient, index, direction)}
               onCallNext={onCallNext}
               onDelete={onDelete}
             />

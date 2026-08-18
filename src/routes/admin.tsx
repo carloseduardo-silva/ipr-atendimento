@@ -10,7 +10,13 @@ import { QueueList } from "@/components/admin/QueueList";
 import { CurrentPatientCard } from "@/components/admin/CurrentPatientCard";
 import { ClearQueueDialog } from "@/components/admin/ClearQueueDialog";
 import { useQueue } from "@/hooks/use-queue";
-import { callNext, removePatient, resetQueue, sortWaiting } from "@/lib/queue-store";
+import {
+  callNext,
+  movePatient,
+  removePatient,
+  resetQueue,
+  sortWaiting,
+} from "@/lib/queue-store";
 import type { Patient } from "@/types/patient";
 
 export const Route = createFileRoute("/admin")({
@@ -108,6 +114,7 @@ function AdminPage() {
               waiting={waiting}
               onCallNext={() => void callNext()}
               onDelete={(id) => void removePatient(id)}
+              onMove={(index, direction) => movePatient(index, direction)}
             />
 
             {done.length > 0 ? (

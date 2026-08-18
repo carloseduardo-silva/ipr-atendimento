@@ -170,6 +170,54 @@ export async function callNext(): Promise<Patient | null> {
   return toPatient(updated as PacienteFilaRow);
 }
 
+/**
+ * Move a paciente uma posição para cima/baixo trocando o `created_at` com a
+ * adjacente. A ordem da fila deriva inteiramente dessa coluna, então o swap
+ * reordena o painel e a sala de espera ao mesmo tempo.
+ */
+export async function movePatient(
+  currentIndex: number,
+  direction: "up" | "down",
+): Promise<void> {
+  ensureInit();
+
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+  // Lê a fila fresca do banco: o `createdAt` do cache é epoch em ms e perde a
+  // precisão de microssegundos do timestamptz, o que empataria as duas linhas.
+  const { data, error: readError } = await supabase
+    .from(TABLE)
+    .select(COLUMNS)
+    .eq("status", "aguardando")
+    .order("created_at", { ascending: true });
+
+  if (readError || !data) {
+    reportError("Não foi possível reordenar a fila.", readError);
+    return;
+  }
+
+  const rows = data as PacienteFilaRow[];
+  const current = rows[currentIndex];
+  const target = rows[targetIndex];
+
+  // Índice fora da lista = a fila mudou entre o render e o clique.
+  if (!current || !target) {
+    await refetch();
+    return;
+  }
+
+  const [{ error: currentError }, { error: targetError }] = await Promise.all([
+    supabase.from(TABLE).update({ created_at: target.created_at }).eq("id", current.id),
+    supabase.from(TABLE).update({ created_at: current.created_at }).eq("id", target.id),
+  ]);
+
+  if (currentError || targetError) {
+    reportError("Não foi possível reordenar a fila.", currentError ?? targetError);
+  }
+
+  await refetch();
+}
+
 /** Apaga todas as pacientes da tabela. Destrutivo e compartilhado — confirme antes de chamar. */
 export async function resetQueue(): Promise<void> {
   ensureInit();
