@@ -1,6 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { UserPlus } from "lucide-react";
 import { addPatient } from "@/lib/queue-store";
+import { MEDICOS } from "@/lib/medicos";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Patient } from "@/types/patient";
 
 interface AddPatientFormProps {
@@ -9,16 +17,19 @@ interface AddPatientFormProps {
 
 export function AddPatientForm({ onAdded }: AddPatientFormProps) {
   const [nome, setNome] = useState("");
+  const [medico, setMedico] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     const trimmed = nome.trim();
-    if (!trimmed || saving) return;
+    if (!trimmed || !medico || saving) return;
     setSaving(true);
     try {
-      const patient = await addPatient(trimmed);
+      const patient = await addPatient(trimmed, medico);
       onAdded(patient);
+      // O médico permanece selecionado: costuma-se cadastrar várias pacientes
+      // seguidas para a mesma fila.
       setNome("");
     } finally {
       setSaving(false);
@@ -50,9 +61,31 @@ export function AddPatientForm({ onAdded }: AddPatientFormProps) {
         className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
       />
 
+      <label
+        htmlFor="medico-paciente"
+        className="mt-4 block text-sm font-medium text-foreground"
+      >
+        Médico responsável
+      </label>
+      <Select value={medico} onValueChange={setMedico}>
+        <SelectTrigger
+          id="medico-paciente"
+          className="mt-2 h-auto w-full rounded-xl border-input bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-2 focus:ring-ring/30"
+        >
+          <SelectValue placeholder="Escolha o médico da fila" />
+        </SelectTrigger>
+        <SelectContent>
+          {MEDICOS.map((nomeMedico) => (
+            <SelectItem key={nomeMedico} value={nomeMedico}>
+              {nomeMedico}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <button
         type="submit"
-        disabled={!nome.trim() || saving}
+        disabled={!nome.trim() || !medico || saving}
         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <UserPlus className="h-4 w-4" />

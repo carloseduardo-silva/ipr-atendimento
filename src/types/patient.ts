@@ -4,6 +4,8 @@ export interface Patient {
   /** UUID v4 */
   id: string;
   nome: string;
+  /** Médico responsável — cada um tem a sua fila isolada. */
+  medico: string;
   status: PatientStatus;
   /** epoch milliseconds */
   createdAt: number;

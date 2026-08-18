@@ -60,11 +60,13 @@ export function usePatientQueueStatus(id: string | undefined): PatientQueueStatu
         return;
       }
 
-      // Quantas pacientes ainda aguardando chegaram antes dela.
+      // Quantas pacientes do mesmo médico ainda aguardando chegaram antes dela.
+      // As filas são isoladas: pacientes de outros médicos não afetam a posição.
       const { count, error: countError } = await supabase
         .from(TABLE)
         .select("id", { count: "exact", head: true })
         .eq("status", "aguardando")
+        .eq("medico", row.medico)
         .lt("created_at", row.created_at);
 
       if (cancelled) return;

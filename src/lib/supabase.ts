@@ -40,12 +40,13 @@ export const AUTH_COOKIE_PREFIX = `sb-${projectRef}-auth-token`;
 export const TABLE = "pacientes_fila";
 
 /** Colunas lidas nas consultas — evita depender de `select("*")`. */
-export const COLUMNS = "id, nome, status, created_at";
+export const COLUMNS = "id, nome, status, created_at, medico";
 
 /** Formato da linha no banco (snake_case, `created_at` como ISO string). */
 export interface PacienteFilaRow {
   id: string;
   nome: string;
+  medico: string;
   status: PatientStatus;
   created_at: string;
 }
@@ -58,6 +59,7 @@ export function toPatient(row: PacienteFilaRow): Patient {
   return {
     id: row.id,
     nome: row.nome,
+    medico: row.medico,
     status: row.status,
     createdAt: Date.parse(row.created_at),
   };

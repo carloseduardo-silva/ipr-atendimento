@@ -9,7 +9,9 @@ import { PatientLinkCard } from "@/components/admin/PatientLinkCard";
 import { QueueList } from "@/components/admin/QueueList";
 import { CurrentPatientCard } from "@/components/admin/CurrentPatientCard";
 import { ClearQueueDialog } from "@/components/admin/ClearQueueDialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueue } from "@/hooks/use-queue";
+import { MEDICOS } from "@/lib/medicos";
 import {
   callNext,
   movePatient,
@@ -48,6 +50,7 @@ function AdminPage() {
   const router = useRouter();
   const patients = useQueue();
   const [lastAdded, setLastAdded] = useState<Patient | null>(null);
+  const [medicoAtivo, setMedicoAtivo] = useState<string>(MEDICOS[0]);
 
   async function handleSignOut() {
     await signOut();
@@ -66,9 +69,21 @@ function AdminPage() {
     return () => data.subscription.unsubscribe();
   }, [router]);
 
-  const waiting = sortWaiting(patients);
-  const current = patients.find((p) => p.status === "em_atendimento") ?? null;
-  const done = patients.filter((p) => p.status === "concluido");
+  // Abas: os médicos da constante mais qualquer outro já presente no banco, para
+  // que linhas antigas (ou de um médico removido da lista) não fiquem invisíveis.
+  const medicos = [
+    ...MEDICOS,
+    ...[...new Set(patients.map((p) => p.medico))]
+      .filter((m) => m && !MEDICOS.includes(m as (typeof MEDICOS)[number]))
+      .sort(),
+  ];
+
+  const waiting = sortWaiting(patients, medicoAtivo);
+  const current =
+    patients.find((p) => p.status === "em_atendimento" && p.medico === medicoAtivo) ?? null;
+  const done = patients.filter(
+    (p) => p.status === "concluido" && p.medico === medicoAtivo,
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,7 +114,8 @@ function AdminPage() {
       <main className="mx-auto w-full max-w-6xl px-5 py-8">
         <h1 className="text-2xl font-semibold text-foreground">Fila de avaliações</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          As pacientes acompanham a posição em tempo real pela sala de espera virtual.
+          Cada médico tem a sua fila independente. As pacientes acompanham a posição em tempo
+          real pela sala de espera virtual.
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
@@ -109,12 +125,28 @@ function AdminPage() {
           </div>
 
           <div className="space-y-5">
+            {/* Só o TabsList: o conteúdo abaixo é único e já derivado de `medicoAtivo`,
+                o que evita duplicar a árvore por médico e preserva o estado do QueueList. */}
+            <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo}>
+              <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto rounded-xl p-1">
+                {medicos.map((m) => (
+                  <TabsTrigger key={m} value={m} className="rounded-lg px-3 py-2">
+                    {m}
+                    <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                      {sortWaiting(patients, m).length}
+                    </span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
             <CurrentPatientCard patient={current} onDelete={(id) => void removePatient(id)} />
             <QueueList
               waiting={waiting}
-              onCallNext={() => void callNext()}
+              medico={medicoAtivo}
+              onCallNext={() => void callNext(medicoAtivo)}
               onDelete={(id) => void removePatient(id)}
-              onMove={(index, direction) => movePatient(index, direction)}
+              onMove={(index, direction) => movePatient(medicoAtivo, index, direction)}
             />
 
             {done.length > 0 ? (

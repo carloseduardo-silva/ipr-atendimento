@@ -131,13 +131,16 @@ function QueueItem({
 }
 
 interface QueueListProps {
+  /** Fila já filtrada pelo médico selecionado — os índices seguem esta lista. */
   waiting: Patient[];
+  /** Médico dono desta fila, exibido no cabeçalho. */
+  medico: string;
   onCallNext: () => void;
   onDelete: (id: string) => void;
   onMove: (currentIndex: number, direction: MoveDirection) => Promise<void>;
 }
 
-export function QueueList({ waiting, onCallNext, onDelete, onMove }: QueueListProps) {
+export function QueueList({ waiting, medico, onCallNext, onDelete, onMove }: QueueListProps) {
   const [moving, setMoving] = useState<{ id: string; direction: MoveDirection } | null>(null);
 
   async function handleMove(patient: Patient, index: number, direction: MoveDirection) {
@@ -152,19 +155,22 @@ export function QueueList({ waiting, onCallNext, onDelete, onMove }: QueueListPr
 
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <Users className="h-5 w-5 text-primary" />
-          Aguardando
-        </h2>
-        <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <Users className="h-5 w-5 text-primary" />
+            Aguardando
+          </h2>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">Fila de {medico}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
           {waiting.length} na fila
         </span>
       </div>
 
       {waiting.length === 0 ? (
         <p className="mt-6 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhuma paciente aguardando no momento.
+          Nenhuma paciente aguardando na fila de {medico}.
         </p>
       ) : (
         <ul className="mt-5 space-y-3">

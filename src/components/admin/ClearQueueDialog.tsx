@@ -25,15 +25,16 @@ export function ClearQueueDialog({ onConfirm }: ClearQueueDialogProps) {
           className="mt-4 inline-flex items-center gap-2 rounded-xl border border-destructive/40 px-3 py-2 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground"
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Limpar fila
+          Limpar todas as filas
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Limpar toda a fila?</AlertDialogTitle>
+          <AlertDialogTitle>Limpar as filas de todos os médicos?</AlertDialogTitle>
           <AlertDialogDescription>
-            Apaga todas as pacientes da fila. Esta ação remove os registros do banco de dados
-            permanentemente, afeta todas as telas abertas e não pode ser desfeita.
+            Apaga todas as pacientes, de <strong>todos os médicos</strong> — não apenas as da
+            aba aberta. Esta ação remove os registros do banco de dados permanentemente, afeta
+            todas as telas abertas e não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck, Stethoscope } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { WaitingStatusCard } from "@/components/waiting/WaitingStatusCard";
 import { NowServingCard } from "@/components/waiting/NowServingCard";
@@ -62,6 +62,16 @@ function EsperaPage() {
             <p className="mt-1 text-center text-sm text-muted-foreground">
               Bem-vinda à sala de espera virtual.
             </p>
+
+            {patient.medico ? (
+              <p className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-brand-soft px-4 py-3 text-center text-sm text-foreground">
+                <Stethoscope className="h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  Sua avaliação online será com:{" "}
+                  <strong className="font-semibold">{patient.medico}</strong>
+                </span>
+              </p>
+            ) : null}
 
             <div className="mt-6">
               {patient.status === "aguardando" ? (

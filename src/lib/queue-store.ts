@@ -101,13 +101,13 @@ export async function listPatients(): Promise<Patient[]> {
   return cache;
 }
 
-/** Insere a paciente enviando apenas o nome: id, status e created_at têm default no banco. */
-export async function addPatient(nome: string): Promise<Patient> {
+/** Insere a paciente com nome e médico: id, status e created_at têm default no banco. */
+export async function addPatient(nome: string, medico: string): Promise<Patient> {
   ensureInit();
 
   const { data, error } = await supabase
     .from(TABLE)
-    .insert({ nome: nome.trim() })
+    .insert({ nome: nome.trim(), medico })
     .select(COLUMNS)
     .single();
 
@@ -121,14 +121,21 @@ export async function addPatient(nome: string): Promise<Patient> {
   return patient;
 }
 
-/** Conclui o atendimento atual e promove a primeira da fila. */
-export async function callNext(): Promise<Patient | null> {
+/**
+ * Conclui o atendimento atual do médico e promove a primeira da fila dele.
+ *
+ * Escopado por médico: as filas são independentes, então cada médico pode ter
+ * uma paciente em atendimento ao mesmo tempo e chamar a próxima em uma fila não
+ * pode encerrar o atendimento de outra.
+ */
+export async function callNext(medico: string): Promise<Patient | null> {
   ensureInit();
 
   const { error: concludeError } = await supabase
     .from(TABLE)
     .update({ status: "concluido" })
-    .eq("status", "em_atendimento");
+    .eq("status", "em_atendimento")
+    .eq("medico", medico);
 
   if (concludeError) {
     reportError("Não foi possível concluir o atendimento atual.", concludeError);
@@ -139,6 +146,7 @@ export async function callNext(): Promise<Patient | null> {
     .from(TABLE)
     .select(COLUMNS)
     .eq("status", "aguardando")
+    .eq("medico", medico)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -174,8 +182,13 @@ export async function callNext(): Promise<Patient | null> {
  * Move a paciente uma posição para cima/baixo trocando o `created_at` com a
  * adjacente. A ordem da fila deriva inteiramente dessa coluna, então o swap
  * reordena o painel e a sala de espera ao mesmo tempo.
+ *
+ * O `currentIndex` vem da lista já filtrada pelo médico na tela, então o SELECT
+ * abaixo precisa aplicar o mesmo filtro — sem ele os índices apontariam para a
+ * fila global e o swap trocaria as pacientes erradas.
  */
 export async function movePatient(
+  medico: string,
   currentIndex: number,
   direction: "up" | "down",
 ): Promise<void> {
@@ -189,6 +202,7 @@ export async function movePatient(
     .from(TABLE)
     .select(COLUMNS)
     .eq("status", "aguardando")
+    .eq("medico", medico)
     .order("created_at", { ascending: true });
 
   if (readError || !data) {
@@ -246,14 +260,19 @@ export async function removePatient(id: string): Promise<void> {
   await refetch();
 }
 
-/** Ordena a fila de espera por ordem de chegada. */
-export function sortWaiting(patients: Patient[]): Patient[] {
+/**
+ * Ordena a fila de espera por ordem de chegada. Quando `medico` é informado,
+ * devolve apenas a fila daquele médico.
+ */
+export function sortWaiting(patients: Patient[], medico?: string): Patient[] {
   return patients
-    .filter((p) => p.status === "aguardando")
+    .filter((p) => p.status === "aguardando" && (!medico || p.medico === medico))
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
-/** Posição 1-based da paciente na fila; 0 quando não está aguardando. */
+/** Posição 1-based da paciente na fila do seu médico; 0 quando não está aguardando. */
 export function getQueuePosition(patients: Patient[], patientId: string): number {
-  return sortWaiting(patients).findIndex((p) => p.id === patientId) + 1;
+  const patient = patients.find((p) => p.id === patientId);
+  if (!patient) return 0;
+  return sortWaiting(patients, patient.medico).findIndex((p) => p.id === patientId) + 1;
 }
