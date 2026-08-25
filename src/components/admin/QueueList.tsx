@@ -1,18 +1,9 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import {
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  ExternalLink,
-  Loader2,
-  Phone,
-  PhoneCall,
-  Users,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, ExternalLink, Loader2, Phone, Users } from "lucide-react";
 import type { Patient } from "@/types/patient";
-import { ESTIMATED_MINUTES_PER_PATIENT } from "@/types/patient";
 import { matchesSearch } from "@/lib/queue-store";
+import { getOverdueMinutes, getTargetTime } from "@/lib/queue-metrics";
 import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
 import { TransferPatientMenu } from "@/components/admin/TransferPatientMenu";
 
@@ -33,6 +24,10 @@ interface QueueItemProps {
   position: number;
   isNext: boolean;
   isLast: boolean;
+  /** Horário prometido na entrada, contra o qual o atraso é medido. */
+  targetTime: number;
+  /** Minutos de atraso em relação ao prazo estimado; 0 quando está dentro do prazo. */
+  overdueMinutes: number;
   /** Direção em andamento nesta paciente, ou null. */
   movingDirection: MoveDirection | null;
   /** Trava as setas enquanto qualquer reordenação está em andamento. */
@@ -50,6 +45,8 @@ function QueueItem({
   position,
   isNext,
   isLast,
+  targetTime,
+  overdueMinutes,
   movingDirection,
   moveDisabled,
   transferring,
@@ -58,11 +55,18 @@ function QueueItem({
   onDelete,
   onTransfer,
 }: QueueItemProps) {
+  const isLate = overdueMinutes > 0;
+
+  // O atraso tem precedência sobre o destaque de "próxima": um prazo estourado
+  // é o que o atendente precisa enxergar primeiro.
+  const cardTone = isLate
+    ? "border-warning/60 bg-warning-soft"
+    : isNext
+      ? "border-primary/40 bg-brand-soft"
+      : "border-border bg-card";
+
   return (
-    <li
-      className={`flex items-center gap-4 rounded-2xl border p-4 transition ${isNext ? "border-primary/40 bg-brand-soft" : "border-border bg-card"
-        }`}
-    >
+    <li className={`flex items-center gap-4 rounded-2xl border p-4 transition ${cardTone}`}>
       <span
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isNext
           ? "bg-primary text-primary-foreground"
@@ -72,10 +76,22 @@ function QueueItem({
         {position}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-foreground">{patient.nome}</p>
-        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          Entrou às {formatTime(patient.createdAt)} <br /> espera estimada{" "}
-          {position * ESTIMATED_MINUTES_PER_PATIENT} min
+        <div className="flex items-center gap-2">
+          <p className="truncate font-medium text-foreground">{patient.nome}</p>
+          {isLate ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning px-2 py-0.5 text-xs font-semibold text-warning-foreground">
+              <Clock className="h-3 w-3" />
+              Atrasado {overdueMinutes} min
+            </span>
+          ) : null}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Entrou às {formatTime(patient.createdAt)}
+          <br />
+          Previsto para{" "}
+          <strong className={`font-semibold ${isLate ? "text-warning" : "text-foreground"}`}>
+            {formatTime(targetTime)}
+          </strong>
         </p>
         {patient.telefone ? (
           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
@@ -157,6 +173,8 @@ interface QueueListProps {
   medico: string;
   /** Texto de busca por nome/telefone — só filtra o que é renderizado, não os índices. */
   search: string;
+  /** Relógio compartilhado do painel: cards e métricas recalculam no mesmo tick. */
+  now: number;
   onCallNext: () => void;
   onDelete: (id: string) => void;
   onMove: (currentIndex: number, direction: MoveDirection) => Promise<void>;
@@ -167,6 +185,7 @@ export function QueueList({
   waiting,
   medico,
   search,
+  now,
   onCallNext,
   onDelete,
   onMove,
@@ -231,6 +250,11 @@ export function QueueList({
                 position={index + 1}
                 isNext={index === 0}
                 isLast={index === waiting.length - 1}
+                // O índice só é usado no fallback das linhas sem `previsto_para`,
+                // e vem da fila completa do médico, não da lista filtrada pela
+                // busca — o prazo não pode depender do texto pesquisado.
+                targetTime={getTargetTime(patient, index)}
+                overdueMinutes={getOverdueMinutes(patient, index, now)}
                 movingDirection={moving?.id === patient.id ? moving.direction : null}
                 moveDisabled={moving !== null || transferring === patient.id}
                 transferring={transferring === patient.id}

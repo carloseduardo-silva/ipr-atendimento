@@ -34,6 +34,10 @@ export function AddPatientForm({ onAdded }: AddPatientFormProps) {
       // seguidas para a mesma fila.
       setNome("");
       setTelefone("");
+    } catch {
+      // `addPatient` já reportou a falha (console + toast) antes de lançar. Sem
+      // este catch a rejeição sobe sem dono e vira "Uncaught (in promise)", já
+      // que o React não aguarda o handler de submit.
     } finally {
       setSaving(false);
     }

@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Clock, RefreshCw, Users } from "lucide-react";
 import { ESTIMATED_MINUTES_PER_PATIENT } from "@/types/patient";
 
 interface WaitingStatusCardProps {
   position: number;
   createdAt: number;
+  /** Prazo gravado na entrada; null nas linhas anteriores à coluna `previsto_para`. */
+  scheduledFor: number | null;
 }
 
 function ordinal(position: number) {
@@ -24,11 +26,23 @@ function formatTimeLeft(ms: number) {
   return `${pad(minutes)}:${pad(seconds)}`;
 }
 
-export function WaitingStatusCard({ position, createdAt }: WaitingStatusCardProps) {
-  const targetTime = useMemo(
-    () => createdAt + position * ESTIMATED_MINUTES_PER_PATIENT * 60_000,
-    [createdAt, position],
-  );
+export function WaitingStatusCard({ position, createdAt, scheduledFor }: WaitingStatusCardProps) {
+  // O prazo gravado na entrada é absoluto e vem do banco, então o cronômetro
+  // reabre no mesmo ponto depois de um reload — que era o furo de ancorar o
+  // alvo só em memória.
+  const estimatedTarget =
+    scheduledFor ?? createdAt + position * ESTIMATED_MINUTES_PER_PATIENT * 60_000;
+
+  // Trava de segurança para as linhas legadas, sem `previsto_para`: nelas o alvo
+  // ainda deriva da posição atual, então é preciso impedi-lo de recuar quando a
+  // fila anda — senão o contador saltaria 5 min para baixo a cada paciente
+  // chamada. Só é estendido quando a paciente é empurrada para trás na fila,
+  // porque aí o tempo restante realmente aumentou. Com `previsto_para` presente
+  // o valor é constante e este bloco vira no-op.
+  const [targetTime, setTargetTime] = useState(estimatedTarget);
+  if (estimatedTarget > targetTime) {
+    setTargetTime(estimatedTarget);
+  }
 
   const [timeLeft, setTimeLeft] = useState(() => Math.max(0, targetTime - Date.now()));
 

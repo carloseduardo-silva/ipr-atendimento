@@ -1,6 +1,15 @@
 import { toast } from "sonner";
 import type { Patient } from "@/types/patient";
-import { COLUMNS, TABLE, supabase, toPatient, type PacienteFilaRow } from "@/lib/supabase";
+import { ESTIMATED_MINUTES_PER_PATIENT } from "@/types/patient";
+import {
+  COLUMNS,
+  MISSING_COLUMN_MESSAGE,
+  TABLE,
+  isMissingColumnError,
+  supabase,
+  toPatient,
+  type PacienteFilaRow,
+} from "@/lib/supabase";
 
 /**
  * Camada de acesso à fila (visão do painel `/admin`).
@@ -29,10 +38,16 @@ function emit() {
   for (const listener of listeners) listener(cache);
 }
 
-/** Reporta a falha para a atendente — as chamadas na UI são fire-and-forget. */
+/**
+ * Reporta a falha para a atendente — as chamadas na UI são fire-and-forget.
+ *
+ * Schema desatualizado ganha mensagem própria: o texto genérico de cada chamador
+ * ("Não foi possível carregar a fila") esconderia a causa real e mandaria a
+ * atendente investigar a fila em vez da migração.
+ */
 function reportError(message: string, error: unknown): void {
   console.error(message, error);
-  toast.error(message);
+  toast.error(isMissingColumnError(error) ? MISSING_COLUMN_MESSAGE : message);
 }
 
 async function fetchPatients(): Promise<Patient[] | null> {
@@ -101,7 +116,16 @@ export async function listPatients(): Promise<Patient[]> {
   return cache;
 }
 
-/** Insere a paciente com nome, médico e telefone (opcional): id, status e created_at têm default no banco. */
+/**
+ * Insere a paciente com nome, médico e telefone (opcional): id, status e
+ * created_at têm default no banco.
+ *
+ * O `previsto_para` é calculado aqui, uma única vez, a partir da posição que ela
+ * ocupa na fila do médico neste instante. Guardá-lo como timestamp absoluto (em
+ * vez de recalcular pela posição atual) é o que mantém o prazo estável quando a
+ * fila anda, sobrevive a um reload da sala de espera e dá ao painel um alvo real
+ * para medir atraso.
+ */
 export async function addPatient(
   nome: string,
   medico: string,
@@ -109,9 +133,31 @@ export async function addPatient(
 ): Promise<Patient> {
   ensureInit();
 
+  // Quantas já aguardam na fila deste médico: a nova entra logo atrás delas.
+  const { count, error: countError } = await supabase
+    .from(TABLE)
+    .select("id", { count: "exact", head: true })
+    .eq("status", "aguardando")
+    .eq("medico", medico);
+
+  if (countError) {
+    reportError("Não foi possível calcular o prazo estimado da paciente.", countError);
+    throw countError;
+  }
+
+  const entryPosition = (count ?? 0) + 1;
+  const previstoPara = new Date(
+    Date.now() + entryPosition * ESTIMATED_MINUTES_PER_PATIENT * 60_000,
+  ).toISOString();
+
   const { data, error } = await supabase
     .from(TABLE)
-    .insert({ nome: nome.trim(), medico, telefone: telefone?.trim() || null })
+    .insert({
+      nome: nome.trim(),
+      medico,
+      telefone: telefone?.trim() || null,
+      previsto_para: previstoPara,
+    })
     .select(COLUMNS)
     .single();
 

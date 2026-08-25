@@ -75,7 +75,11 @@ function EsperaPage() {
 
             <div className="mt-6">
               {patient.status === "aguardando" ? (
-                <WaitingStatusCard position={position} createdAt={patient.createdAt} />
+                <WaitingStatusCard
+                  position={position}
+                  createdAt={patient.createdAt}
+                  scheduledFor={patient.scheduledFor}
+                />
               ) : patient.status === "em_atendimento" ? (
                 <NowServingCard />
               ) : (

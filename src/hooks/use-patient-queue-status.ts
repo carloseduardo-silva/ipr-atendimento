@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { COLUMNS, TABLE, supabase, toPatient, type PacienteFilaRow } from "@/lib/supabase";
+import {
+  COLUMNS,
+  MISSING_COLUMN_MESSAGE,
+  TABLE,
+  isMissingColumnError,
+  supabase,
+  toPatient,
+  type PacienteFilaRow,
+} from "@/lib/supabase";
 import type { Patient } from "@/types/patient";
 
 /**
@@ -44,7 +52,17 @@ export function usePatientQueueStatus(id: string | undefined): PatientQueueStatu
       if (cancelled) return;
 
       if (error || !data) {
-        if (error) console.error("Falha ao carregar o status da paciente.", error);
+        // A paciente segue vendo "Não encontramos o seu cadastro" — schema não é
+        // problema dela —, mas o console precisa apontar a migração, senão o erro
+        // se disfarça de id inválido.
+        if (error) {
+          console.error(
+            isMissingColumnError(error)
+              ? MISSING_COLUMN_MESSAGE
+              : "Falha ao carregar o status da paciente.",
+            error,
+          );
+        }
         setPatient(null);
         setPosition(0);
         setLoading(false);

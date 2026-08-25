@@ -7,9 +7,11 @@ import { supabase } from "@/lib/supabase";
 import { AddPatientForm } from "@/components/admin/AddPatientForm";
 import { PatientLinkCard } from "@/components/admin/PatientLinkCard";
 import { QueueList } from "@/components/admin/QueueList";
+import { QueueMetrics } from "@/components/admin/QueueMetrics";
 import { CurrentPatientCard } from "@/components/admin/CurrentPatientCard";
 import { ClearQueueDialog } from "@/components/admin/ClearQueueDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNow } from "@/hooks/use-now";
 import { useQueue } from "@/hooks/use-queue";
 import { MEDICOS } from "@/lib/medicos";
 import {
@@ -50,6 +52,9 @@ export const Route = createFileRoute("/admin")({
 function AdminPage() {
   const router = useRouter();
   const patients = useQueue();
+  // Um único relógio para o painel: prazos dos cards e métricas avançam juntos,
+  // sem que o atendente precise recarregar a página.
+  const now = useNow();
   const [lastAdded, setLastAdded] = useState<Patient | null>(null);
   const [medicoAtivo, setMedicoAtivo] = useState<string>(MEDICOS[0]);
   const [search, setSearch] = useState("");
@@ -138,6 +143,8 @@ function AdminPage() {
               />
             </div>
 
+            <QueueMetrics waiting={waiting} now={now} />
+
             {/* Só o TabsList: o conteúdo abaixo é único e já derivado de `medicoAtivo`,
                 o que evita duplicar a árvore por médico e preserva o estado do QueueList. */}
             <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo}>
@@ -158,6 +165,7 @@ function AdminPage() {
               waiting={waiting}
               medico={medicoAtivo}
               search={search}
+              now={now}
               onCallNext={() => void callNext(medicoAtivo)}
               onDelete={(id) => void removePatient(id)}
               onMove={(index, direction) => movePatient(medicoAtivo, index, direction)}

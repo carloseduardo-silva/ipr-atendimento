@@ -40,9 +40,9 @@ export const AUTH_COOKIE_PREFIX = `sb-${projectRef}-auth-token`;
 export const TABLE = "pacientes_fila";
 
 /** Colunas lidas nas consultas — evita depender de `select("*")`. */
-export const COLUMNS = "id, nome, status, created_at, medico, telefone";
+export const COLUMNS = "id, nome, status, created_at, medico, telefone, previsto_para";
 
-/** Formato da linha no banco (snake_case, `created_at` como ISO string). */
+/** Formato da linha no banco (snake_case, timestamps como ISO string). */
 export interface PacienteFilaRow {
   id: string;
   nome: string;
@@ -50,7 +50,27 @@ export interface PacienteFilaRow {
   status: PatientStatus;
   created_at: string;
   telefone: string | null;
+  /** Prazo prometido na entrada; null nas linhas anteriores à migração. */
+  previsto_para: string | null;
 }
+
+/**
+ * Erro de coluna ausente: o banco está atrás das migrações.
+ *
+ * `42703` é o undefined_column do Postgres (vem nos SELECT/UPDATE) e `PGRST204`
+ * é o "coluna não encontrada no schema cache" do PostgREST (vem nos INSERT).
+ * Como `COLUMNS` lista as colunas explicitamente, uma coluna nova vira
+ * pré-requisito rígido: sem a migração, toda leitura da fila falha.
+ */
+export function isMissingColumnError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false;
+  const { code } = error as { code: unknown };
+  return code === "42703" || code === "PGRST204";
+}
+
+/** Mensagem acionável para o erro acima — genérico demais ("não foi possível…") esconde a causa. */
+export const MISSING_COLUMN_MESSAGE =
+  "O banco está desatualizado: falta a coluna previsto_para. Rode a migração pendente em supabase/migrations.";
 
 /**
  * Converte a linha do banco para o `Patient` usado pela UI, que trabalha com
@@ -64,5 +84,6 @@ export function toPatient(row: PacienteFilaRow): Patient {
     telefone: row.telefone,
     status: row.status,
     createdAt: Date.parse(row.created_at),
+    scheduledFor: row.previsto_para ? Date.parse(row.previsto_para) : null,
   };
 }
