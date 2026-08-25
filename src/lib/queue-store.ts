@@ -101,13 +101,17 @@ export async function listPatients(): Promise<Patient[]> {
   return cache;
 }
 
-/** Insere a paciente com nome e médico: id, status e created_at têm default no banco. */
-export async function addPatient(nome: string, medico: string): Promise<Patient> {
+/** Insere a paciente com nome, médico e telefone (opcional): id, status e created_at têm default no banco. */
+export async function addPatient(
+  nome: string,
+  medico: string,
+  telefone?: string | null,
+): Promise<Patient> {
   ensureInit();
 
   const { data, error } = await supabase
     .from(TABLE)
-    .insert({ nome: nome.trim(), medico })
+    .insert({ nome: nome.trim(), medico, telefone: telefone?.trim() || null })
     .select(COLUMNS)
     .single();
 
@@ -232,6 +236,23 @@ export async function movePatient(
   await refetch();
 }
 
+/**
+ * Transfere a paciente para outro médico. Ela some da fila do médico atual e
+ * aparece na do novo por Realtime — nenhum estado local precisa ser gerido aqui.
+ */
+export async function transferPatient(id: string, medico: string): Promise<void> {
+  ensureInit();
+
+  const { error } = await supabase.from(TABLE).update({ medico }).eq("id", id);
+
+  if (error) {
+    reportError("Não foi possível transferir a paciente.", error);
+    return;
+  }
+
+  await refetch();
+}
+
 /** Apaga todas as pacientes da tabela. Destrutivo e compartilhado — confirme antes de chamar. */
 export async function resetQueue(): Promise<void> {
   ensureInit();
@@ -268,6 +289,23 @@ export function sortWaiting(patients: Patient[], medico?: string): Patient[] {
   return patients
     .filter((p) => p.status === "aguardando" && (!medico || p.medico === medico))
     .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/**
+ * Compara o texto buscado com nome (substring, case-insensitive) e telefone
+ * (por dígitos, ignorando pontuação) da paciente.
+ */
+export function matchesSearch(patient: Patient, query: string): boolean {
+  const trimmed = query.trim();
+  if (!trimmed) return true;
+
+  const nameMatch = patient.nome.toLowerCase().includes(trimmed.toLowerCase());
+
+  const queryDigits = trimmed.replace(/\D/g, "");
+  const phoneMatch =
+    queryDigits.length > 0 && (patient.telefone ?? "").replace(/\D/g, "").includes(queryDigits);
+
+  return nameMatch || phoneMatch;
 }
 
 /** Posição 1-based da paciente na fila do seu médico; 0 quando não está aguardando. */

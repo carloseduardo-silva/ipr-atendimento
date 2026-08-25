@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, Video } from "lucide-react";
+import { ExternalLink, Phone, Video } from "lucide-react";
 import type { Patient } from "@/types/patient";
 import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
 
@@ -28,6 +28,12 @@ export function CurrentPatientCard({ patient, onDelete }: CurrentPatientCardProp
             <p className="text-sm text-muted-foreground">
               A paciente já foi avisada na sala de espera.
             </p>
+            {patient.telefone ? (
+              <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                <Phone className="h-3.5 w-3.5" />
+                {patient.telefone}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -6,12 +6,15 @@ import {
   Clock,
   ExternalLink,
   Loader2,
+  Phone,
   PhoneCall,
   Users,
 } from "lucide-react";
 import type { Patient } from "@/types/patient";
 import { ESTIMATED_MINUTES_PER_PATIENT } from "@/types/patient";
+import { matchesSearch } from "@/lib/queue-store";
 import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
+import { TransferPatientMenu } from "@/components/admin/TransferPatientMenu";
 
 function formatTime(timestamp: number) {
   return new Date(timestamp).toLocaleTimeString("pt-BR", {
@@ -34,9 +37,12 @@ interface QueueItemProps {
   movingDirection: MoveDirection | null;
   /** Trava as setas enquanto qualquer reordenação está em andamento. */
   moveDisabled: boolean;
+  /** Se esta paciente está sendo transferida para outro médico agora. */
+  transferring: boolean;
   onMove: (direction: MoveDirection) => void;
   onCallNext: () => void;
   onDelete: (id: string) => void;
+  onTransfer: (medico: string) => void;
 }
 
 function QueueItem({
@@ -46,34 +52,51 @@ function QueueItem({
   isLast,
   movingDirection,
   moveDisabled,
+  transferring,
   onMove,
   onCallNext,
   onDelete,
+  onTransfer,
 }: QueueItemProps) {
   return (
     <li
-      className={`flex items-center gap-4 rounded-2xl border p-4 transition ${
-        isNext ? "border-primary/40 bg-brand-soft" : "border-border bg-card"
-      }`}
+      className={`flex items-center gap-4 rounded-2xl border p-4 transition ${isNext ? "border-primary/40 bg-brand-soft" : "border-border bg-card"
+        }`}
     >
       <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-          isNext
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
-        }`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isNext
+          ? "bg-primary text-primary-foreground"
+          : "bg-secondary text-secondary-foreground"
+          }`}
       >
         {position}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-foreground">{patient.nome}</p>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          Entrou às {formatTime(patient.createdAt)} · espera estimada{" "}
+          Entrou às {formatTime(patient.createdAt)} <br /> espera estimada{" "}
           {position * ESTIMATED_MINUTES_PER_PATIENT} min
         </p>
+        {patient.telefone ? (
+          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <Phone className="h-3 w-3" />
+            {patient.telefone}
+          </p>
+        ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+
+        {isNext ? (
+          <button
+            type="button"
+            onClick={onCallNext}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            Chamar próximo
+          </button>
+        ) : null}
+
+
         <div className="flex flex-col gap-1">
           <button
             type="button"
@@ -104,16 +127,7 @@ function QueueItem({
             )}
           </button>
         </div>
-        {isNext ? (
-          <button
-            type="button"
-            onClick={onCallNext}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-          >
-            <PhoneCall className="h-4 w-4" />
-            Chamar próximo
-          </button>
-        ) : null}
+
         <Link
           to="/espera"
           search={{ id: patient.id }}
@@ -124,6 +138,12 @@ function QueueItem({
         >
           <ExternalLink className="h-4 w-4" />
         </Link>
+        <TransferPatientMenu
+          patient={patient}
+          transferring={transferring}
+          disabled={transferring}
+          onTransfer={onTransfer}
+        />
         <DeletePatientDialog patient={patient} onConfirm={() => onDelete(patient.id)} variant="icon" />
       </div>
     </li>
@@ -135,13 +155,25 @@ interface QueueListProps {
   waiting: Patient[];
   /** Médico dono desta fila, exibido no cabeçalho. */
   medico: string;
+  /** Texto de busca por nome/telefone — só filtra o que é renderizado, não os índices. */
+  search: string;
   onCallNext: () => void;
   onDelete: (id: string) => void;
   onMove: (currentIndex: number, direction: MoveDirection) => Promise<void>;
+  onTransfer: (id: string, medico: string) => Promise<void>;
 }
 
-export function QueueList({ waiting, medico, onCallNext, onDelete, onMove }: QueueListProps) {
+export function QueueList({
+  waiting,
+  medico,
+  search,
+  onCallNext,
+  onDelete,
+  onMove,
+  onTransfer,
+}: QueueListProps) {
   const [moving, setMoving] = useState<{ id: string; direction: MoveDirection } | null>(null);
+  const [transferring, setTransferring] = useState<string | null>(null);
 
   async function handleMove(patient: Patient, index: number, direction: MoveDirection) {
     if (moving) return;
@@ -152,6 +184,18 @@ export function QueueList({ waiting, medico, onCallNext, onDelete, onMove }: Que
       setMoving(null);
     }
   }
+
+  async function handleTransfer(patient: Patient, medico: string) {
+    if (transferring) return;
+    setTransferring(patient.id);
+    try {
+      await onTransfer(patient.id, medico);
+    } finally {
+      setTransferring(null);
+    }
+  }
+
+  const visibleCount = waiting.filter((p) => matchesSearch(p, search)).length;
 
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-6">
@@ -172,22 +216,31 @@ export function QueueList({ waiting, medico, onCallNext, onDelete, onMove }: Que
         <p className="mt-6 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nenhuma paciente aguardando na fila de {medico}.
         </p>
+      ) : visibleCount === 0 ? (
+        <p className="mt-6 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Nenhuma paciente encontrada para &ldquo;{search}&rdquo;.
+        </p>
       ) : (
         <ul className="mt-5 space-y-3">
-          {waiting.map((patient, index) => (
-            <QueueItem
-              key={patient.id}
-              patient={patient}
-              position={index + 1}
-              isNext={index === 0}
-              isLast={index === waiting.length - 1}
-              movingDirection={moving?.id === patient.id ? moving.direction : null}
-              moveDisabled={moving !== null}
-              onMove={(direction) => void handleMove(patient, index, direction)}
-              onCallNext={onCallNext}
-              onDelete={onDelete}
-            />
-          ))}
+          {waiting.map((patient, index) => {
+            if (!matchesSearch(patient, search)) return null;
+            return (
+              <QueueItem
+                key={patient.id}
+                patient={patient}
+                position={index + 1}
+                isNext={index === 0}
+                isLast={index === waiting.length - 1}
+                movingDirection={moving?.id === patient.id ? moving.direction : null}
+                moveDisabled={moving !== null || transferring === patient.id}
+                transferring={transferring === patient.id}
+                onMove={(direction) => void handleMove(patient, index, direction)}
+                onTransfer={(target) => void handleTransfer(patient, target)}
+                onCallNext={onCallNext}
+                onDelete={onDelete}
+              />
+            );
+          })}
         </ul>
       )}
     </section>

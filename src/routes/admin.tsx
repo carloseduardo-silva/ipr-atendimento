@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink, LogOut, Search } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { isAuthenticated, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,7 @@ import {
   removePatient,
   resetQueue,
   sortWaiting,
+  transferPatient,
 } from "@/lib/queue-store";
 import type { Patient } from "@/types/patient";
 
@@ -51,6 +52,7 @@ function AdminPage() {
   const patients = useQueue();
   const [lastAdded, setLastAdded] = useState<Patient | null>(null);
   const [medicoAtivo, setMedicoAtivo] = useState<string>(MEDICOS[0]);
+  const [search, setSearch] = useState("");
 
   async function handleSignOut() {
     await signOut();
@@ -125,6 +127,17 @@ function AdminPage() {
           </div>
 
           <div className="space-y-5">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nome ou telefone…"
+                aria-label="Buscar paciente na fila"
+                className="w-full rounded-xl border border-input bg-background py-3 pl-11 pr-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+              />
+            </div>
+
             {/* Só o TabsList: o conteúdo abaixo é único e já derivado de `medicoAtivo`,
                 o que evita duplicar a árvore por médico e preserva o estado do QueueList. */}
             <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo}>
@@ -144,9 +157,11 @@ function AdminPage() {
             <QueueList
               waiting={waiting}
               medico={medicoAtivo}
+              search={search}
               onCallNext={() => void callNext(medicoAtivo)}
               onDelete={(id) => void removePatient(id)}
               onMove={(index, direction) => movePatient(medicoAtivo, index, direction)}
+              onTransfer={(id, medico) => transferPatient(id, medico)}
             />
 
             {done.length > 0 ? (

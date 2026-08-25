@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { UserPlus } from "lucide-react";
 import { addPatient } from "@/lib/queue-store";
+import { formatPhoneInput } from "@/lib/phone";
 import { MEDICOS } from "@/lib/medicos";
 import {
   Select,
@@ -17,6 +18,7 @@ interface AddPatientFormProps {
 
 export function AddPatientForm({ onAdded }: AddPatientFormProps) {
   const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [medico, setMedico] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -26,11 +28,12 @@ export function AddPatientForm({ onAdded }: AddPatientFormProps) {
     if (!trimmed || !medico || saving) return;
     setSaving(true);
     try {
-      const patient = await addPatient(trimmed, medico);
+      const patient = await addPatient(trimmed, medico, telefone || null);
       onAdded(patient);
       // O médico permanece selecionado: costuma-se cadastrar várias pacientes
       // seguidas para a mesma fila.
       setNome("");
+      setTelefone("");
     } finally {
       setSaving(false);
     }
@@ -58,6 +61,23 @@ export function AddPatientForm({ onAdded }: AddPatientFormProps) {
         onChange={(e) => setNome(e.target.value)}
         placeholder="Ex.: Maria Silva"
         autoComplete="off"
+        className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+      />
+
+      <label
+        htmlFor="telefone-paciente"
+        className="mt-4 block text-sm font-medium text-foreground"
+      >
+        Telefone <span className="font-normal text-muted-foreground">(opcional)</span>
+      </label>
+      <input
+        id="telefone-paciente"
+        value={telefone}
+        onChange={(e) => setTelefone(formatPhoneInput(e.target.value))}
+        placeholder="(11) 91234-5678"
+        inputMode="tel"
+        autoComplete="off"
+        maxLength={15}
         className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
       />
 

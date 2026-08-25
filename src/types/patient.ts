@@ -6,6 +6,8 @@ export interface Patient {
   nome: string;
   /** Médico responsável — cada um tem a sua fila isolada. */
   medico: string;
+  /** Formatado como (DD) NNNNN-NNNN; null quando não informado. */
+  telefone: string | null;
   status: PatientStatus;
   /** epoch milliseconds */
   createdAt: number;
