@@ -11,4 +11,4 @@ export interface Patient {
   createdAt: number;
 }
 
-export const ESTIMATED_MINUTES_PER_PATIENT = 15;
+export const ESTIMATED_MINUTES_PER_PATIENT = 5;
