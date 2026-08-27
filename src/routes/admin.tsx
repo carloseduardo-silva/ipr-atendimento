@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ExternalLink, EyeOff, LogOut, Search } from "lucide-react";
+import { ExternalLink, EyeOff, LogOut, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { isAuthenticated, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -22,6 +22,8 @@ import {
 import { useNow } from "@/hooks/use-now";
 import { useQueue } from "@/hooks/use-queue";
 import { useHiddenMedicos } from "@/hooks/use-hidden-medicos";
+import { useHideAddPatientForm } from "@/hooks/use-hide-add-patient-form";
+import { cn } from "@/lib/utils";
 import { MEDICOS } from "@/lib/medicos";
 import {
   callNext,
@@ -68,6 +70,7 @@ function AdminPage() {
   const [medicoAtivo, setMedicoAtivo] = useState<string>(MEDICOS[0]);
   const [search, setSearch] = useState("");
   const { hidden: hiddenMedicos, toggle: toggleMedicoHidden } = useHiddenMedicos();
+  const { hidden: hideAddForm, toggle: toggleAddForm } = useHideAddPatientForm();
 
   async function handleSignOut() {
     await signOut();
@@ -121,6 +124,23 @@ function AdminPage() {
         subtitle="Painel de gestão da fila"
         right={
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              title={
+                hideAddForm
+                  ? "Mostrar o formulário de adicionar paciente"
+                  : "Ocultar o formulário de adicionar paciente (cadastro é feito pelo SDR do atendimento)"
+              }
+              onClick={toggleAddForm}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+            >
+              {hideAddForm ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+              {hideAddForm ? "Mostrar cadastro" : "Ocultar cadastro"}
+            </button>
             <Link
               to="/espera"
               search={{ id: undefined }}
@@ -148,11 +168,18 @@ function AdminPage() {
           real pela sala de espera virtual.
         </p>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-          <div className="space-y-5">
-            <AddPatientForm onAdded={setLastAdded} />
-            {lastAdded ? <PatientLinkCard patient={lastAdded} /> : null}
-          </div>
+        <div
+          className={cn(
+            "mt-8 grid gap-6",
+            hideAddForm ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]",
+          )}
+        >
+          {!hideAddForm ? (
+            <div className="space-y-5">
+              <AddPatientForm onAdded={setLastAdded} />
+              {lastAdded ? <PatientLinkCard patient={lastAdded} /> : null}
+            </div>
+          ) : null}
 
           <div className="space-y-5">
             <div className="relative">
