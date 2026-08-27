@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ExternalLink, LogOut, Search } from "lucide-react";
+import { ExternalLink, EyeOff, LogOut, Search } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { isAuthenticated, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -11,8 +11,17 @@ import { QueueMetrics } from "@/components/admin/QueueMetrics";
 import { CurrentPatientCard } from "@/components/admin/CurrentPatientCard";
 import { ClearQueueDialog } from "@/components/admin/ClearQueueDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useNow } from "@/hooks/use-now";
 import { useQueue } from "@/hooks/use-queue";
+import { useHiddenMedicos } from "@/hooks/use-hidden-medicos";
 import { MEDICOS } from "@/lib/medicos";
 import {
   callNext,
@@ -58,6 +67,7 @@ function AdminPage() {
   const [lastAdded, setLastAdded] = useState<Patient | null>(null);
   const [medicoAtivo, setMedicoAtivo] = useState<string>(MEDICOS[0]);
   const [search, setSearch] = useState("");
+  const { hidden: hiddenMedicos, toggle: toggleMedicoHidden } = useHiddenMedicos();
 
   async function handleSignOut() {
     await signOut();
@@ -84,6 +94,19 @@ function AdminPage() {
       .filter((m) => m && !MEDICOS.includes(m as (typeof MEDICOS)[number]))
       .sort(),
   ];
+
+  // Vendedores só gerenciam algumas filas: a oculta some das abas, mas nunca
+  // some da lista de gerenciamento nem perde pacientes — é só visualização.
+  const medicosVisiveis = medicos.filter((m) => !hiddenMedicos.has(m));
+
+  // Se a aba ativa foi ocultada (por este vendedor ou em outra aba), cai para
+  // a primeira ainda visível em vez de deixar o painel preso numa fila oculta.
+  useEffect(() => {
+    const [primeiroVisivel] = medicosVisiveis;
+    if (primeiroVisivel && !medicosVisiveis.includes(medicoAtivo)) {
+      setMedicoAtivo(primeiroVisivel);
+    }
+  }, [medicoAtivo, medicosVisiveis]);
 
   const waiting = sortWaiting(patients, medicoAtivo);
   const current =
@@ -147,18 +170,58 @@ function AdminPage() {
 
             {/* Só o TabsList: o conteúdo abaixo é único e já derivado de `medicoAtivo`,
                 o que evita duplicar a árvore por médico e preserva o estado do QueueList. */}
-            <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo}>
-              <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto rounded-xl p-1">
-                {medicos.map((m) => (
-                  <TabsTrigger key={m} value={m} className="rounded-lg px-3 py-2">
-                    {m}
-                    <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                      {sortWaiting(patients, m).length}
-                    </span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            <div className="flex items-start gap-2">
+              {medicosVisiveis.length > 0 ? (
+                <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo} className="min-w-0 flex-1">
+                  <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto rounded-xl p-1">
+                    {medicosVisiveis.map((m) => (
+                      <TabsTrigger key={m} value={m} className="rounded-lg px-3 py-2">
+                        {m}
+                        <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                          {sortWaiting(patients, m).length}
+                        </span>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              ) : (
+                <p className="flex-1 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                  Nenhuma fila visível. Use "Filas visíveis" para exibir alguma.
+                </p>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    title="Escolher quais filas de médico aparecem neste painel"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+                  >
+                    <EyeOff className="h-4 w-4" />
+                    Filas visíveis
+                    {hiddenMedicos.size > 0 ? (
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                        {hiddenMedicos.size} oculta{hiddenMedicos.size > 1 ? "s" : ""}
+                      </span>
+                    ) : null}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>Filas exibidas neste painel</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {medicos.map((m) => (
+                    <DropdownMenuCheckboxItem
+                      key={m}
+                      checked={!hiddenMedicos.has(m)}
+                      onCheckedChange={() => toggleMedicoHidden(m)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {m}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             <CurrentPatientCard patient={current} onDelete={(id) => void removePatient(id)} />
             <QueueList

@@ -112,6 +112,28 @@ function QueueItem({
           </button>
         ) : null}
 
+        <DeletePatientDialog patient={patient} onConfirm={() => onDelete(patient.id)} variant="icon" />
+
+
+
+
+        <Link
+          to="/espera"
+          search={{ id: patient.id }}
+          target="_blank"
+          aria-label="Abrir sala de espera"
+          title="Abrir sala de espera"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border text-foreground transition hover:border-primary hover:text-primary"
+        >
+          <ExternalLink className="h-4 w-4" />
+        </Link>
+
+        <TransferPatientMenu
+          patient={patient}
+          transferring={transferring}
+          disabled={transferring}
+          onTransfer={onTransfer}
+        />
 
         <div className="flex flex-col gap-1">
           <button
@@ -144,23 +166,6 @@ function QueueItem({
           </button>
         </div>
 
-        <Link
-          to="/espera"
-          search={{ id: patient.id }}
-          target="_blank"
-          aria-label="Abrir sala de espera"
-          title="Abrir sala de espera"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border text-foreground transition hover:border-primary hover:text-primary"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Link>
-        <TransferPatientMenu
-          patient={patient}
-          transferring={transferring}
-          disabled={transferring}
-          onTransfer={onTransfer}
-        />
-        <DeletePatientDialog patient={patient} onConfirm={() => onDelete(patient.id)} variant="icon" />
       </div>
     </li>
   );
