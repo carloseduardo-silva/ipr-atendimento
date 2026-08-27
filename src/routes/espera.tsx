@@ -3,6 +3,7 @@ import { CheckCircle2, Loader2, ShieldCheck, Stethoscope } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
 import { WaitingStatusCard } from "@/components/waiting/WaitingStatusCard";
 import { NowServingCard } from "@/components/waiting/NowServingCard";
+import { BeforeAfterCarousel } from "@/components/waiting/BeforeAfterCarousel";
 import { FaqCarousel } from "@/components/waiting/FaqCarousel";
 import { usePatientQueueStatus } from "@/hooks/use-patient-queue-status";
 
@@ -97,8 +98,10 @@ function EsperaPage() {
             </div>
           </>
         )}
-
+        
         <FaqCarousel />
+
+        <BeforeAfterCarousel />
 
         <p className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="h-4 w-4" />
