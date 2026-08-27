@@ -6,7 +6,7 @@ interface ClinicHeaderProps {
 export function ClinicHeader({ subtitle, right }: ClinicHeaderProps) {
   return (
     <header className="border-b border-border/70 bg-card/80 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
         <div className="flex items-center gap-3">
           <img
             src="/images/logo-ipr.png"

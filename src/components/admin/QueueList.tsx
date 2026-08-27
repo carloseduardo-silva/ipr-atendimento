@@ -66,42 +66,46 @@ function QueueItem({
       : "border-border bg-card";
 
   return (
-    <li className={`flex items-center gap-4 rounded-2xl border p-4 transition ${cardTone}`}>
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isNext
-          ? "bg-primary text-primary-foreground"
-          : "bg-secondary text-secondary-foreground"
-          }`}
-      >
-        {position}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate font-medium text-foreground">{patient.nome}</p>
-          {isLate ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning px-2 py-0.5 text-xs font-semibold text-warning-foreground">
-              <Clock className="h-3 w-3" />
-              Atrasado {overdueMinutes} min
-            </span>
+    <li
+      className={`flex flex-col gap-3 rounded-2xl border p-4 transition sm:flex-row sm:items-center sm:gap-4 ${cardTone}`}
+    >
+      <div className="flex min-w-0 items-center gap-4">
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isNext
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-secondary-foreground"
+            }`}
+        >
+          {position}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate font-medium text-foreground">{patient.nome}</p>
+            {isLate ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning px-2 py-0.5 text-xs font-semibold text-warning-foreground">
+                <Clock className="h-3 w-3" />
+                Atrasado {overdueMinutes} min
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Entrou às {formatTime(patient.createdAt)}
+            <br />
+            Previsto para{" "}
+            <strong className={`font-semibold ${isLate ? "text-warning" : "text-foreground"}`}>
+              {formatTime(targetTime)}
+            </strong>
+          </p>
+          {patient.telefone ? (
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <Phone className="h-3 w-3" />
+              {patient.telefone}
+            </p>
           ) : null}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Entrou às {formatTime(patient.createdAt)}
-          <br />
-          Previsto para{" "}
-          <strong className={`font-semibold ${isLate ? "text-warning" : "text-foreground"}`}>
-            {formatTime(targetTime)}
-          </strong>
-        </p>
-        {patient.telefone ? (
-          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            <Phone className="h-3 w-3" />
-            {patient.telefone}
-          </p>
-        ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
 
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
         {isNext ? (
           <button
             type="button"
@@ -113,9 +117,6 @@ function QueueItem({
         ) : null}
 
         <DeletePatientDialog patient={patient} onConfirm={() => onDelete(patient.id)} variant="icon" />
-
-
-
 
         <Link
           to="/espera"
@@ -165,7 +166,6 @@ function QueueItem({
             )}
           </button>
         </div>
-
       </div>
     </li>
   );

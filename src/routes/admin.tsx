@@ -123,9 +123,14 @@ function AdminPage() {
       <ClinicHeader
         subtitle="Painel de gestão da fila"
         right={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              aria-label={
+                hideAddForm
+                  ? "Mostrar o formulário de adicionar paciente"
+                  : "Ocultar o formulário de adicionar paciente"
+              }
               title={
                 hideAddForm
                   ? "Mostrar o formulário de adicionar paciente"
@@ -139,29 +144,35 @@ function AdminPage() {
               ) : (
                 <PanelLeftClose className="h-4 w-4" />
               )}
-              {hideAddForm ? "Mostrar cadastro" : "Ocultar cadastro"}
+              <span className="hidden sm:inline">
+                {hideAddForm ? "Mostrar cadastro" : "Ocultar cadastro"}
+              </span>
             </button>
             <Link
               to="/espera"
               search={{ id: undefined }}
+              aria-label="Ver sala de espera"
+              title="Ver sala de espera"
               className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
             >
               <ExternalLink className="h-4 w-4" />
-              Ver sala de espera
+              <span className="hidden sm:inline">Ver sala de espera</span>
             </Link>
             <button
               type="button"
+              aria-label="Sair"
+              title="Sair"
               onClick={() => void handleSignOut()}
               className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
             >
               <LogOut className="h-4 w-4" />
-              Sair
+              <span className="hidden sm:inline">Sair</span>
             </button>
           </div>
         }
       />
 
-      <main className="mx-auto w-full max-w-6xl px-5 py-8">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-5 sm:py-8">
         <h1 className="text-2xl font-semibold text-foreground">Fila de avaliações</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Cada médico tem a sua fila independente. As pacientes acompanham a posição em tempo
@@ -170,7 +181,11 @@ function AdminPage() {
 
         <div
           className={cn(
-            "mt-8 grid gap-6",
+            // `grid-cols-1` explícito é essencial: sem coluna definida, o grid usa
+            // sizing "auto" abaixo do `lg:` e deixa a única coluna crescer até o
+            // maior conteúdo (ex.: as abas de médico sem quebra), estourando a
+            // largura da página inteira no mobile.
+            "mt-8 grid grid-cols-1 gap-6",
             hideAddForm ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]",
           )}
         >
@@ -197,7 +212,7 @@ function AdminPage() {
 
             {/* Só o TabsList: o conteúdo abaixo é único e já derivado de `medicoAtivo`,
                 o que evita duplicar a árvore por médico e preserva o estado do QueueList. */}
-            <div className="flex items-start gap-2">
+            <div className="flex flex-wrap items-start gap-2">
               {medicosVisiveis.length > 0 ? (
                 <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo} className="min-w-0 flex-1">
                   <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto rounded-xl p-1">
@@ -212,7 +227,7 @@ function AdminPage() {
                   </TabsList>
                 </Tabs>
               ) : (
-                <p className="flex-1 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                <p className="min-w-0 flex-1 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
                   Nenhuma fila visível. Use "Filas visíveis" para exibir alguma.
                 </p>
               )}
@@ -225,7 +240,7 @@ function AdminPage() {
                     className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
                   >
                     <EyeOff className="h-4 w-4" />
-                    Filas visíveis
+                    <span className="hidden sm:inline">Filas visíveis</span>
                     {hiddenMedicos.size > 0 ? (
                       <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                         {hiddenMedicos.size} oculta{hiddenMedicos.size > 1 ? "s" : ""}

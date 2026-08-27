@@ -178,5 +178,9 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    /* Rede de segurança: qualquer overflow pontual (ex.: uma linha de botões
+       que não coube) vira scroll vertical normal em vez de abrir uma barra
+       horizontal que desloca a página inteira no mobile. */
+    overflow-x: hidden;
   }
 }
