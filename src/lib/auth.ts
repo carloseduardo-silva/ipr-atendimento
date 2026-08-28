@@ -80,3 +80,10 @@ export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) console.error("Falha ao encerrar a sessão.", error);
 }
+
+/**
+ * E-mail do usuário de atendimento: alguns controles do painel (filtro por
+ * unidade, "Limpar todas as filas") só aparecem para ele. É só uma
+ * checagem de UI — quem protege os dados de verdade é a RLS (ver nota acima).
+ */
+export const ATENDIMENTO_EMAIL = "atendimentoipr@gmail.com";

@@ -41,7 +41,7 @@ export function QueueMetrics({ waiting, now }: QueueMetricsProps) {
   const { total, late, longestWaitMinutes } = getQueueMetrics(waiting, now);
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-6 xl:gap-9">
       <MetricCard
         label="Total na fila"
         value={String(total)}

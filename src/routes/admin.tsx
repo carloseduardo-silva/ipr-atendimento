@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-rout
 import { useEffect, useState } from "react";
 import { ExternalLink, EyeOff, LogOut, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
-import { isAuthenticated, signOut } from "@/lib/auth";
+import { ATENDIMENTO_EMAIL, isAuthenticated, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { AddPatientForm } from "@/components/admin/AddPatientForm";
 import { PatientLinkCard } from "@/components/admin/PatientLinkCard";
@@ -23,10 +23,12 @@ import { useNow } from "@/hooks/use-now";
 import { useQueue } from "@/hooks/use-queue";
 import { useHiddenMedicos } from "@/hooks/use-hidden-medicos";
 import { useHideAddPatientForm } from "@/hooks/use-hide-add-patient-form";
+import { useCurrentUserEmail } from "@/hooks/use-current-user-email";
 import { cn } from "@/lib/utils";
-import { MEDICOS } from "@/lib/medicos";
+import { MEDICO_UNIDADE, MEDICOS, UNIDADES, type Medico, type Unidade } from "@/lib/medicos";
 import {
   callNext,
+  finishCurrentPatient,
   movePatient,
   removePatient,
   resetQueue,
@@ -71,6 +73,9 @@ function AdminPage() {
   const [search, setSearch] = useState("");
   const { hidden: hiddenMedicos, toggle: toggleMedicoHidden } = useHiddenMedicos();
   const { hidden: hideAddForm, toggle: toggleAddForm } = useHideAddPatientForm();
+  const currentUserEmail = useCurrentUserEmail();
+  const isAtendimentoUser = currentUserEmail === ATENDIMENTO_EMAIL;
+  const [unidadeFiltro, setUnidadeFiltro] = useState<Unidade | "todas">("todas");
 
   async function handleSignOut() {
     await signOut();
@@ -98,9 +103,17 @@ function AdminPage() {
       .sort(),
   ];
 
+  // Filtro por unidade: só o usuário de atendimento tem acesso, e afeta
+  // apenas as abas exibidas — os seletores de "Adicionar"/"Transferir"
+  // continuam oferecendo todos os médicos, sem essa restrição.
+  const medicosDaUnidade =
+    isAtendimentoUser && unidadeFiltro !== "todas"
+      ? medicos.filter((m) => MEDICO_UNIDADE[m as Medico] === unidadeFiltro)
+      : medicos;
+
   // Vendedores só gerenciam algumas filas: a oculta some das abas, mas nunca
   // some da lista de gerenciamento nem perde pacientes — é só visualização.
-  const medicosVisiveis = medicos.filter((m) => !hiddenMedicos.has(m));
+  const medicosVisiveis = medicosDaUnidade.filter((m) => !hiddenMedicos.has(m));
 
   // Se a aba ativa foi ocultada (por este vendedor ou em outra aba), cai para
   // a primeira ainda visível em vez de deixar o painel preso numa fila oculta.
@@ -212,6 +225,26 @@ function AdminPage() {
 
             {/* Só o TabsList: o conteúdo abaixo é único e já derivado de `medicoAtivo`,
                 o que evita duplicar a árvore por médico e preserva o estado do QueueList. */}
+            {isAtendimentoUser ? (
+              <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border p-1">
+                {(["todas", ...UNIDADES] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setUnidadeFiltro(u)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                      unidadeFiltro === u
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-secondary",
+                    )}
+                  >
+                    {u === "todas" ? "Todas as unidades" : u}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap items-start gap-2">
               {medicosVisiveis.length > 0 ? (
                 <Tabs value={medicoAtivo} onValueChange={setMedicoAtivo} className="min-w-0 flex-1">
@@ -241,11 +274,7 @@ function AdminPage() {
                   >
                     <EyeOff className="h-4 w-4" />
                     <span className="hidden sm:inline">Filas visíveis</span>
-                    {hiddenMedicos.size > 0 ? (
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                        {hiddenMedicos.size} oculta{hiddenMedicos.size > 1 ? "s" : ""}
-                      </span>
-                    ) : null}
+                    
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
@@ -265,7 +294,11 @@ function AdminPage() {
               </DropdownMenu>
             </div>
 
-            <CurrentPatientCard patient={current} onDelete={(id) => void removePatient(id)} />
+            <CurrentPatientCard
+              patient={current}
+              onDelete={(id) => void removePatient(id)}
+              onFinish={() => void finishCurrentPatient(medicoAtivo)}
+            />
             <QueueList
               waiting={waiting}
               medico={medicoAtivo}
@@ -287,7 +320,9 @@ function AdminPage() {
                     <li key={p.id}>{p.nome}</li>
                   ))}
                 </ul>
-                <ClearQueueDialog onConfirm={() => void resetQueue()} />
+                {isAtendimentoUser ? (
+                  <ClearQueueDialog onConfirm={() => void resetQueue()} />
+                ) : null}
               </details>
             ) : null}
           </div>

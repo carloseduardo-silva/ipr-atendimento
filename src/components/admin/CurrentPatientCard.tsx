@@ -1,14 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, Phone, Video } from "lucide-react";
+import { CheckCircle2, ExternalLink, Phone, Video } from "lucide-react";
 import type { Patient } from "@/types/patient";
 import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
 
 interface CurrentPatientCardProps {
   patient: Patient | null;
   onDelete: (id: string) => void;
+  onFinish: () => void;
 }
 
-export function CurrentPatientCard({ patient, onDelete }: CurrentPatientCardProps) {
+export function CurrentPatientCard({ patient, onDelete, onFinish }: CurrentPatientCardProps) {
   return (
     <section
       className={`rounded-2xl border p-6 ${
@@ -48,6 +49,15 @@ export function CurrentPatientCard({ patient, onDelete }: CurrentPatientCardProp
             <ExternalLink className="h-4 w-4" />
             Abrir sala de espera
           </Link>
+          <button
+            type="button"
+            onClick={onFinish}
+            className="inline-flex items-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-success-foreground transition hover:opacity-90"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Encerrar atendimento
+          </button>
+
           <DeletePatientDialog patient={patient} onConfirm={() => onDelete(patient.id)} />
         </div>
       ) : (
