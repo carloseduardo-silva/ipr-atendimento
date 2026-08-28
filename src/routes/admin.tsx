@@ -32,6 +32,7 @@ import {
   movePatient,
   removePatient,
   resetQueue,
+  returnPatientToQueue,
   sortWaiting,
   transferPatient,
 } from "@/lib/queue-store";
@@ -298,6 +299,7 @@ function AdminPage() {
               patient={current}
               onDelete={(id) => void removePatient(id)}
               onFinish={() => void finishCurrentPatient(medicoAtivo)}
+              onReturnToQueue={(id) => void returnPatientToQueue(id, medicoAtivo)}
             />
             <QueueList
               waiting={waiting}

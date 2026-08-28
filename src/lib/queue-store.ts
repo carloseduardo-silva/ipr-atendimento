@@ -251,6 +251,45 @@ export async function finishCurrentPatient(medico: string): Promise<void> {
 }
 
 /**
+ * Devolve a paciente para o início da fila do médico (posição 1), sem alterar
+ * `previsto_para` — o prazo prometido na entrada continua valendo, no mesmo
+ * espírito de `movePatient`.
+ */
+export async function returnPatientToQueue(id: string, medico: string): Promise<void> {
+  ensureInit();
+
+  const { data: firstWaiting, error: firstError } = await supabase
+    .from(TABLE)
+    .select(COLUMNS)
+    .eq("status", "aguardando")
+    .eq("medico", medico)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (firstError) {
+    reportError("Não foi possível reposicionar a fila.", firstError);
+    return;
+  }
+
+  const newCreatedAt = firstWaiting
+    ? new Date(Date.parse((firstWaiting as PacienteFilaRow).created_at) - 1).toISOString()
+    : new Date().toISOString();
+
+  const { error } = await supabase
+    .from(TABLE)
+    .update({ status: "aguardando", created_at: newCreatedAt })
+    .eq("id", id);
+
+  if (error) {
+    reportError("Não foi possível voltar a paciente para a fila.", error);
+    return;
+  }
+
+  await refetch();
+}
+
+/**
  * Move a paciente uma posição para cima/baixo trocando o `created_at` com a
  * adjacente. A ordem da fila deriva inteiramente dessa coluna, então o swap
  * reordena o painel e a sala de espera ao mesmo tempo.

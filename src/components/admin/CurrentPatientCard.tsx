@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, ExternalLink, Phone, Video } from "lucide-react";
+import { CheckCircle2, ExternalLink, Phone, Undo2, Video } from "lucide-react";
 import type { Patient } from "@/types/patient";
 import { DeletePatientDialog } from "@/components/admin/DeletePatientDialog";
 
@@ -7,9 +7,15 @@ interface CurrentPatientCardProps {
   patient: Patient | null;
   onDelete: (id: string) => void;
   onFinish: () => void;
+  onReturnToQueue: (id: string) => void;
 }
 
-export function CurrentPatientCard({ patient, onDelete, onFinish }: CurrentPatientCardProps) {
+export function CurrentPatientCard({
+  patient,
+  onDelete,
+  onFinish,
+  onReturnToQueue,
+}: CurrentPatientCardProps) {
   return (
     <section
       className={`rounded-2xl border p-6 ${
@@ -49,6 +55,15 @@ export function CurrentPatientCard({ patient, onDelete, onFinish }: CurrentPatie
             <ExternalLink className="h-4 w-4" />
             Abrir sala de espera
           </Link>
+          <button
+            type="button"
+            onClick={() => onReturnToQueue(patient.id)}
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+          >
+            <Undo2 className="h-4 w-4" />
+            Voltar para fila
+          </button>
+
           <button
             type="button"
             onClick={onFinish}
