@@ -87,3 +87,16 @@ export async function signOut(): Promise<void> {
  * checagem de UI — quem protege os dados de verdade é a RLS (ver nota acima).
  */
 export const ATENDIMENTO_EMAIL = "atendimentoipr@gmail.com";
+
+/**
+ * E-mail da gerente comercial: só ela vê a aba "Gestão" do /rodizio, com o
+ * override manual de status. Também é só checagem de UI — ver nota acima.
+ */
+export const GERENCIA_EMAIL = "gerenciacomercialipr@gmail.com";
+
+/**
+ * Login compartilhado do setor de vendas. Vai direto para o /rodizio e não
+ * acessa a fila de avaliações; cada celular escolhe o próprio vendedor na tela.
+ * Também é só roteamento de UI — ver nota acima.
+ */
+export const VENDAS_EMAIL = "vendasipr@gmail.com";

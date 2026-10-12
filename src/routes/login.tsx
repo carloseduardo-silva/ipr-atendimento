@@ -2,9 +2,23 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { LogIn } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
-import { isAuthenticated, signIn } from "@/lib/auth";
+import { GERENCIA_EMAIL, VENDAS_EMAIL, isAuthenticated, signIn } from "@/lib/auth";
+
+/** Destinos aceitos no `?redirect=`: lista fechada para não virar open redirect. */
+const REDIRECTS = ["/admin", "/rodizio"] as const;
+type LoginRedirect = (typeof REDIRECTS)[number];
+
+/** Setor de cada conta: vendas e gerência comercial usam o rodízio; o resto, a fila. */
+function destinoPadrao(email: string): LoginRedirect {
+  const normalizado = email.trim().toLowerCase();
+  return normalizado === VENDAS_EMAIL || normalizado === GERENCIA_EMAIL ? "/rodizio" : "/admin";
+}
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: LoginRedirect } => {
+    const redirect = REDIRECTS.find((r) => r === search["redirect"]);
+    return redirect ? { redirect } : {};
+  },
   head: () => ({
     meta: [
       { title: "Entrar | Instituto Pedro Ruiz" },
@@ -19,9 +33,9 @@ export const Route = createFileRoute("/login")({
       },
     ],
   }),
-  beforeLoad: () => {
+  beforeLoad: ({ search }) => {
     if (isAuthenticated()) {
-      throw redirect({ to: "/admin" });
+      throw redirect({ to: search.redirect ?? "/admin" });
     }
   },
   component: LoginPage,
@@ -29,6 +43,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const router = useRouter();
+  const { redirect: destino } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +61,7 @@ function LoginPage() {
         return;
       }
       await router.invalidate();
-      await router.navigate({ to: "/admin" });
+      await router.navigate({ to: destino ?? destinoPadrao(email) });
     } finally {
       setSubmitting(false);
     }

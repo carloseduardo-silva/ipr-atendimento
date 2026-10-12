@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-rout
 import { useEffect, useState } from "react";
 import { ExternalLink, EyeOff, LogOut, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { ClinicHeader } from "@/components/ClinicHeader";
-import { ATENDIMENTO_EMAIL, isAuthenticated, signOut } from "@/lib/auth";
+import { ATENDIMENTO_EMAIL, VENDAS_EMAIL, isAuthenticated, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { AddPatientForm } from "@/components/admin/AddPatientForm";
 import { PatientLinkCard } from "@/components/admin/PatientLinkCard";
@@ -83,6 +83,12 @@ function AdminPage() {
     await router.invalidate();
     await router.navigate({ to: "/login" });
   }
+
+  // O login compartilhado de vendas é de outro setor: vai para o rodízio. Só
+  // roteamento de UI; o `beforeLoad` não sabe o e-mail sem decodificar o JWT.
+  useEffect(() => {
+    if (currentUserEmail === VENDAS_EMAIL) void router.navigate({ to: "/rodizio" });
+  }, [currentUserEmail, router]);
 
   // Sessão encerrada em outra aba ou token expirado: sem isto o painel ficaria
   // aberto com sessão morta e toda escrita falharia por RLS, sem explicação.

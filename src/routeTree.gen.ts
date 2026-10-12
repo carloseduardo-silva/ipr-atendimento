@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as EsperaRouteImport } from './routes/espera'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as RodizioRouteImport } from './routes/rodizio'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RodizioRoute = RodizioRouteImport.update({
+  id: '/rodizio',
+  path: '/rodizio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/espera': typeof EsperaRoute
   '/login': typeof LoginRoute
+  '/rodizio': typeof RodizioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/espera': typeof EsperaRoute
   '/login': typeof LoginRoute
+  '/rodizio': typeof RodizioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/espera': typeof EsperaRoute
   '/login': typeof LoginRoute
+  '/rodizio': typeof RodizioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/espera' | '/login'
+  fullPaths: '/' | '/admin' | '/espera' | '/login' | '/rodizio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/espera' | '/login'
-  id: '__root__' | '/' | '/admin' | '/espera' | '/login'
+  to: '/' | '/admin' | '/espera' | '/login' | '/rodizio'
+  id: '__root__' | '/' | '/admin' | '/espera' | '/login' | '/rodizio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   EsperaRoute: typeof EsperaRoute
   LoginRoute: typeof LoginRoute
+  RodizioRoute: typeof RodizioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rodizio': {
+      id: '/rodizio'
+      path: '/rodizio'
+      fullPath: '/rodizio'
+      preLoaderRoute: typeof RodizioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   EsperaRoute: EsperaRoute,
   LoginRoute: LoginRoute,
+  RodizioRoute: RodizioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
