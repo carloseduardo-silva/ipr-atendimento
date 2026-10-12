@@ -7,6 +7,7 @@ import { GestaoPanel } from "@/components/rodizio/GestaoPanel";
 import { MeuStatusCard } from "@/components/rodizio/MeuStatusCard";
 import { QuemEVoceCard } from "@/components/rodizio/QuemEVoceCard";
 import { RodizioQueue } from "@/components/rodizio/RodizioQueue";
+import { RodizioStepper } from "@/components/rodizio/RodizioStepper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentUserEmail } from "@/hooks/use-current-user-email";
 import { useNow } from "@/hooks/use-now";
@@ -85,6 +86,18 @@ function RodizioPage() {
     }
   }, [snapshot, vendedorId, trocar]);
 
+  // Etapas do vendedor: primeiro só o "Quem é você", depois o rodízio. Enquanto
+  // a sessão, o aparelho ou a lista não carregaram (ou o id salvo ainda não foi
+  // conferido), mostra carregando — sem isso a fila piscaria antes do seletor.
+  const etapa: "carregando" | "identificacao" | "rodizio" =
+    !email || !pronto || !snapshot.carregado
+      ? "carregando"
+      : meuVendedor
+        ? "rodizio"
+        : vendedorId
+          ? "carregando"
+          : "identificacao";
+
   const fila = sortFila(snapshot.vendedores);
   const minhaPosicao = meuVendedor ? fila.findIndex((v) => v.id === meuVendedor.id) + 1 : 0;
 
@@ -107,8 +120,6 @@ function RodizioPage() {
             onTrocar={trocar}
           />
         </>
-      ) : email && !isGerencia && pronto && snapshot.carregado && !vendedorId ? (
-        <QuemEVoceCard vendedores={snapshot.vendedores} onEscolher={escolher} />
       ) : null}
 
       <RodizioQueue snapshot={snapshot} now={now} meuId={meuVendedor?.id ?? null} />
@@ -136,43 +147,64 @@ function RodizioPage() {
       />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
-        <h1 className="text-2xl font-semibold text-foreground">Rodízio de vendas</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          O próximo a atender é o disponível há mais tempo. Voltar da pausa ou terminar um
-          atendimento leva você para o fim da fila.
-        </p>
-
-        <div className="mt-6">
-          {isGerencia ? (
-            <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
-              <TabsList className="grid w-full grid-cols-2 rounded-xl p-1">
-                <TabsTrigger value="rodizio" className="rounded-lg py-2">
-                  Rodízio
-                </TabsTrigger>
-                <TabsTrigger value="gestao" className="rounded-lg py-2">
-                  Gestão
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="rodizio" className="mt-5">
-                {rodizio}
-              </TabsContent>
-              <TabsContent value="gestao" className="mt-5">
-                <GestaoPanel
-                  snapshot={snapshot}
-                  now={now}
-                  onSetStatus={setStatus}
-                  onFinalizar={finalizarAtendimento}
-                  onAdd={addVendedor}
-                  onUpdate={updateVendedor}
-                  onRemove={removeVendedor}
-                />
-              </TabsContent>
-            </Tabs>
-          ) : (
-            rodizio
-          )}
-        </div>
+        {isGerencia ? (
+          <>
+            <Titulo />
+            <div className="mt-6">
+              <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
+                <TabsList className="grid w-full grid-cols-2 rounded-xl p-1">
+                  <TabsTrigger value="rodizio" className="rounded-lg py-2">
+                    Rodízio
+                  </TabsTrigger>
+                  <TabsTrigger value="gestao" className="rounded-lg py-2">
+                    Gestão
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="rodizio" className="mt-5">
+                  {rodizio}
+                </TabsContent>
+                <TabsContent value="gestao" className="mt-5">
+                  <GestaoPanel
+                    snapshot={snapshot}
+                    now={now}
+                    onSetStatus={setStatus}
+                    onFinalizar={finalizarAtendimento}
+                    onAdd={addVendedor}
+                    onUpdate={updateVendedor}
+                    onRemove={removeVendedor}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </>
+        ) : etapa === "carregando" ? (
+          <p className="py-16 text-center text-sm text-muted-foreground" role="status">
+            Carregando…
+          </p>
+        ) : etapa === "identificacao" ? (
+          <div className="mx-auto max-w-md space-y-6">
+            <RodizioStepper atual={0} />
+            <QuemEVoceCard vendedores={snapshot.vendedores} onEscolher={escolher} />
+          </div>
+        ) : (
+          <>
+            <Titulo />
+            <div className="mt-6">{rodizio}</div>
+          </>
+        )}
       </main>
     </div>
+  );
+}
+
+function Titulo() {
+  return (
+    <>
+      <h1 className="text-2xl font-semibold text-foreground">Rodízio de vendas</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        O próximo a atender é o disponível há mais tempo. Voltar da pausa ou terminar um atendimento
+        leva você para o fim da fila.
+      </p>
+    </>
   );
 }
