@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Pencil, UserPlus } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Pencil, UserPlus } from "lucide-react";
 import { RemoveVendedorDialog } from "@/components/rodizio/RemoveVendedorDialog";
 import { VendedorFormDialog } from "@/components/rodizio/VendedorFormDialog";
 import {
@@ -16,6 +16,7 @@ import {
   atendimentosHoje,
   formatDuracao,
   statusEmoji,
+  sortFila,
   statusLabel,
   type RodizioSnapshot,
   type StatusManual,
@@ -29,6 +30,7 @@ interface GestaoPanelProps {
   now: number;
   onSetStatus: (vendedorId: string, status: StatusManual) => Promise<void>;
   onFinalizar: (vendedorId: string) => Promise<void>;
+  onMove: (vendedorId: string, direction: "up" | "down") => Promise<void>;
   onAdd: (nome: string) => Promise<boolean>;
   onUpdate: (vendedorId: string, nome: string) => Promise<boolean>;
   onRemove: (vendedorId: string) => Promise<void>;
@@ -44,14 +46,26 @@ export function GestaoPanel({
   now,
   onSetStatus,
   onFinalizar,
+  onMove,
   onAdd,
   onUpdate,
   onRemove,
 }: GestaoPanelProps) {
   const { vendedores, atendimentos } = snapshot;
+  // Quem está na fila vem primeiro, na ordem da fila (as setas mexem nessa
+  // ordem); os demais ficam abaixo, por produção do dia.
+  const fila = sortFila(vendedores);
+  const posicaoNaFila = new Map(fila.map((v, index) => [v.id, index]));
   const linhas = [...vendedores]
     .map((v) => ({ vendedor: v, hoje: atendimentosHoje(atendimentos, v.id) }))
-    .sort((a, b) => b.hoje - a.hoje || a.vendedor.nome.localeCompare(b.vendedor.nome));
+    .sort((a, b) => {
+      const posA = posicaoNaFila.get(a.vendedor.id);
+      const posB = posicaoNaFila.get(b.vendedor.id);
+      if (posA !== undefined && posB !== undefined) return posA - posB;
+      if (posA !== undefined) return -1;
+      if (posB !== undefined) return 1;
+      return b.hoje - a.hoje || a.vendedor.nome.localeCompare(b.vendedor.nome);
+    });
   const totalHoje = linhas.reduce((sum, l) => sum + l.hoje, 0);
 
   return (
@@ -91,6 +105,9 @@ export function GestaoPanel({
                 key={vendedor.id}
                 vendedor={vendedor}
                 hoje={hoje}
+                posicao={posicaoNaFila.get(vendedor.id) ?? null}
+                totalFila={fila.length}
+                onMove={(direction) => onMove(vendedor.id, direction)}
                 tempoAtendimento={(() => {
                   const aberto = atendimentoAberto(atendimentos, vendedor.id);
                   return aberto ? now - Date.parse(aberto.inicio_atendimento) : null;
@@ -111,6 +128,9 @@ export function GestaoPanel({
 function GestaoRow({
   vendedor,
   hoje,
+  posicao,
+  totalFila,
+  onMove,
   tempoAtendimento,
   onSetStatus,
   onFinalizar,
@@ -119,6 +139,10 @@ function GestaoRow({
 }: {
   vendedor: VendedorRow;
   hoje: number;
+  /** Índice 0-based na fila; `null` quando fora dela. */
+  posicao: number | null;
+  totalFila: number;
+  onMove: (direction: "up" | "down") => Promise<void>;
   tempoAtendimento: number | null;
   onSetStatus: (status: StatusManual) => Promise<void>;
   onFinalizar: () => Promise<void>;
@@ -140,6 +164,35 @@ function GestaoRow({
 
   return (
     <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+      {posicao !== null ? (
+        <div className="flex shrink-0 items-center gap-1">
+          <div className="flex flex-col">
+            <button
+              type="button"
+              disabled={pending || posicao === 0}
+              onClick={() => void run(() => onMove("up"))}
+              aria-label={`Subir ${vendedor.nome} na fila`}
+              title="Subir na fila"
+              className="inline-flex h-6 w-8 items-center justify-center rounded-md border border-border text-foreground transition hover:border-primary hover:text-primary disabled:opacity-30 disabled:hover:border-border disabled:hover:text-foreground"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              disabled={pending || posicao === totalFila - 1}
+              onClick={() => void run(() => onMove("down"))}
+              aria-label={`Descer ${vendedor.nome} na fila`}
+              title="Descer na fila"
+              className="mt-0.5 inline-flex h-6 w-8 items-center justify-center rounded-md border border-border text-foreground transition hover:border-primary hover:text-primary disabled:opacity-30 disabled:hover:border-border disabled:hover:text-foreground"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
+          <span className="w-6 text-center text-sm font-semibold tabular-nums text-muted-foreground">
+            {posicao + 1}º
+          </span>
+        </div>
+      ) : null}
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-foreground">{vendedor.nome}</p>
         <p className="text-xs text-muted-foreground">

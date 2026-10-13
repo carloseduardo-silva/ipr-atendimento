@@ -29,7 +29,7 @@ export function RodizioQueue({ snapshot, now, meuId }: RodizioQueueProps) {
   return (
     <div className="space-y-5">
       <Section
-        title="🟢 Fila do Rodízio"
+        title="🟢 Fila de Atendimento"
         count={fila.length}
         empty="Ninguém disponível no momento."
       >
@@ -62,7 +62,7 @@ export function RodizioQueue({ snapshot, now, meuId }: RodizioQueueProps) {
       </Section>
 
       <Section
-        title="🔴 Em Atendimento"
+        title="🤝 Em Atendimento"
         count={ocupados.length}
         empty="Nenhum atendimento em andamento."
       >
@@ -79,7 +79,7 @@ export function RodizioQueue({ snapshot, now, meuId }: RodizioQueueProps) {
         })}
       </Section>
 
-      <Section title="🟡 Em Pausa / Almoço" count={pausados.length} empty="Todos estão no IPR vendendo!">
+      <Section title="🔴 Em Pausa / Almoço" count={pausados.length} empty="Todos estão no IPR vendendo!">
         {pausados.map((v) => (
           <Row key={v.id} highlight={v.id === meuId}>
             <p className="min-w-0 flex-1 truncate font-medium text-foreground">{v.nome}</p>

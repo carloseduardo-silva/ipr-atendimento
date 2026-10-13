@@ -36,7 +36,7 @@ export const STATUS_LABEL: Record<VendedorStatus, string> = {
 
 export const STATUS_EMOJI: Record<VendedorStatus, string> = {
   disponivel: "🟢",
-  em_atendimento: "🔴",
+  em_atendimento: "🤝",
   almoco: "🍱",
   pausa: "☕",
   ausente: "⚪",
@@ -200,12 +200,13 @@ export function atendimentosHoje(atendimentos: AtendimentoRow[], vendedorId: str
   ).length;
 }
 
-/** `ms` → "07 min 42 seg" (com horas quando passa de 60 min). */
+/** `ms` → "42 seg" abaixo de 1 min, "07 min 42 seg" depois (com horas quando passa de 60 min). */
 export function formatDuracao(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  if (totalSeconds < 60) return `${seconds} seg`;
   const pad = (n: number) => String(n).padStart(2, "0");
   const base = `${pad(minutes)} min ${pad(seconds)} seg`;
   return hours > 0 ? `${hours} h ${base}` : base;
@@ -276,6 +277,57 @@ export async function setStatus(vendedorId: string, status: StatusManual): Promi
     .neq("status", status);
 
   if (error) reportError("Não foi possível alterar o status.", error);
+
+  await refetch();
+}
+
+/**
+ * Move o vendedor uma posição para cima/baixo na fila trocando `entrou_fila_em`
+ * com o adjacente. Relê a fila no banco (por id, não por índice) porque a tela
+ * pode estar atrasada em relação a outro aparelho.
+ */
+export async function moveVendedor(vendedorId: string, direction: "up" | "down"): Promise<void> {
+  ensureInit();
+
+  const { data, error: readError } = await supabase
+    .from(VENDEDORES)
+    .select("id, entrou_fila_em")
+    .eq("status", "disponivel")
+    .eq("ativo", true)
+    .order("entrou_fila_em", { ascending: true });
+
+  if (readError || !data) {
+    reportError("Não foi possível reordenar a fila.", readError);
+    return;
+  }
+
+  const rows = data as Pick<VendedorRow, "id" | "entrou_fila_em">[];
+  const index = rows.findIndex((r) => r.id === vendedorId);
+  const current = rows[index];
+  const target = rows[direction === "up" ? index - 1 : index + 1];
+
+  // Fora da fila ou sem vizinho: a fila mudou entre o render e o clique.
+  if (!current || !target) {
+    await refetch();
+    return;
+  }
+
+  const [{ error: currentError }, { error: targetError }] = await Promise.all([
+    supabase
+      .from(VENDEDORES)
+      .update({ entrou_fila_em: target.entrou_fila_em })
+      .eq("id", current.id)
+      .eq("status", "disponivel"),
+    supabase
+      .from(VENDEDORES)
+      .update({ entrou_fila_em: current.entrou_fila_em })
+      .eq("id", target.id)
+      .eq("status", "disponivel"),
+  ]);
+
+  if (currentError || targetError) {
+    reportError("Não foi possível reordenar a fila.", currentError ?? targetError);
+  }
 
   await refetch();
 }

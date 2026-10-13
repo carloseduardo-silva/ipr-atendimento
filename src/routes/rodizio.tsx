@@ -19,6 +19,7 @@ import {
   atendimentoAberto,
   finalizarAtendimento,
   iniciarAtendimento,
+  moveVendedor,
   removeVendedor,
   setStatus,
   sortFila,
@@ -169,6 +170,7 @@ function RodizioPage() {
                     now={now}
                     onSetStatus={setStatus}
                     onFinalizar={finalizarAtendimento}
+                    onMove={moveVendedor}
                     onAdd={addVendedor}
                     onUpdate={updateVendedor}
                     onRemove={removeVendedor}
@@ -202,7 +204,7 @@ function Titulo() {
     <>
       <h1 className="text-2xl font-semibold text-foreground">Fila de atendimento IPR Brooklin</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        O próximo a atender é o disponível há mais tempo. Voltar da pausa ou terminar um atendimento
+        O próximo a atender é o disponível há mais tempo. <br /> Voltar da pausa ou terminar um atendimento
         leva você para o fim da fila.
       </p>
     </>

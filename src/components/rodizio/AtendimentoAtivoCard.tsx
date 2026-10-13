@@ -25,7 +25,7 @@ export function AtendimentoAtivoCard({ atendimento, now, onFinalizar }: Atendime
   return (
     <section className="rounded-2xl border-2 border-success/50 bg-success-soft p-5 shadow-sm sm:p-6">
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        🔴 Você está em atendimento
+        🤝 Você está em atendimento
       </p>
       <div className="mt-3 flex items-center gap-3">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
