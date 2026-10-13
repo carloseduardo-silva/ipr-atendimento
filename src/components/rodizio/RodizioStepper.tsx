@@ -11,7 +11,7 @@ interface RodizioStepperProps {
 /** Indicador das etapas do vendedor: identificar-se e, depois, operar o rodízio. */
 export function RodizioStepper({ atual }: RodizioStepperProps) {
   return (
-    <ol className="flex items-center gap-2" aria-label="Etapas">
+    <ol className="flex items-center justify-center gap-2" aria-label="Etapas">
       {ETAPAS.map((etapa, index) => {
         const concluida = index < atual;
         const ativa = index === atual;
@@ -19,7 +19,7 @@ export function RodizioStepper({ atual }: RodizioStepperProps) {
           <li
             key={etapa}
             aria-current={ativa ? "step" : undefined}
-            className="flex min-w-0 flex-1 items-center gap-2"
+            className="flex min-w-0 items-center gap-2"
           >
             <span
               className={cn(
@@ -42,7 +42,7 @@ export function RodizioStepper({ atual }: RodizioStepperProps) {
             {index < ETAPAS.length - 1 ? (
               <span
                 aria-hidden
-                className={cn("h-px min-w-4 flex-1", concluida ? "bg-success" : "bg-border")}
+                className={cn("h-px w-12 shrink-0", concluida ? "bg-success" : "bg-border")}
               />
             ) : null}
           </li>
