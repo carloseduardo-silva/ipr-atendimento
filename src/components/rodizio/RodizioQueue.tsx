@@ -79,7 +79,7 @@ export function RodizioQueue({ snapshot, now, meuId }: RodizioQueueProps) {
         })}
       </Section>
 
-      <Section title="🟡 Em Pausa / Almoço" count={pausados.length} empty="Todos estão na loja.">
+      <Section title="🟡 Em Pausa / Almoço" count={pausados.length} empty="Todos estão no IPR vendendo!">
         {pausados.map((v) => (
           <Row key={v.id} highlight={v.id === meuId}>
             <p className="min-w-0 flex-1 truncate font-medium text-foreground">{v.nome}</p>

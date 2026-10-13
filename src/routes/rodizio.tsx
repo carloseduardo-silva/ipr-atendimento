@@ -29,7 +29,7 @@ import { supabase } from "@/lib/supabase";
 export const Route = createFileRoute("/rodizio")({
   head: () => ({
     meta: [
-      { title: "Rodízio de Vendas | Instituto Pedro Ruiz" },
+      { title: "Fila de Atendimento | Instituto Pedro Ruiz" },
       {
         name: "description",
         content: "Fila de rodízio dos vendedores do Instituto Pedro Ruiz, em tempo real.",
@@ -129,7 +129,7 @@ function RodizioPage() {
   return (
     <div className="min-h-screen bg-background">
       <ClinicHeader
-        subtitle="Rodízio de vendas"
+        subtitle="Fila de atendimento IPR Brooklin"
         right={
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -200,7 +200,7 @@ function RodizioPage() {
 function Titulo() {
   return (
     <>
-      <h1 className="text-2xl font-semibold text-foreground">Rodízio de vendas</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Fila de atendimento IPR Brooklin</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         O próximo a atender é o disponível há mais tempo. Voltar da pausa ou terminar um atendimento
         leva você para o fim da fila.
