@@ -75,9 +75,9 @@ function RodizioPage() {
   }, [router]);
 
   // Login de vendas é compartilhado: quem é o vendedor vem da escolha salva
-  // neste aparelho, não da sessão. A gerência não se identifica como vendedor.
-  const meuVendedor =
-    (!isGerencia && vendedorId && snapshot.vendedores.find((v) => v.id === vendedorId)) || null;
+  // neste aparelho, não da sessão. A gerência também atende e se identifica
+  // do mesmo jeito (precisa estar cadastrada como vendedora).
+  const meuVendedor = (vendedorId && snapshot.vendedores.find((v) => v.id === vendedorId)) || null;
 
   // Vendedor salvo foi removido pela gerência: volta a pedir o nome. Só depois
   // do primeiro fetch, senão a lista ainda vazia apagaria toda escolha no load.
@@ -162,7 +162,19 @@ function RodizioPage() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="rodizio" className="mt-5">
-                  {rodizio}
+                  {/* Sem etapas aqui: a gerente vê a fila mesmo antes de se identificar. */}
+                  {etapa === "carregando" ? (
+                    <p className="py-16 text-center text-sm text-muted-foreground" role="status">
+                      Carregando…
+                    </p>
+                  ) : (
+                    <div className="space-y-5">
+                      {etapa === "identificacao" ? (
+                        <QuemEVoceCard vendedores={snapshot.vendedores} onEscolher={escolher} />
+                      ) : null}
+                      {rodizio}
+                    </div>
+                  )}
                 </TabsContent>
                 <TabsContent value="gestao" className="mt-5">
                   <GestaoPanel
@@ -204,8 +216,8 @@ function Titulo() {
     <>
       <h1 className="text-2xl font-semibold text-foreground">Fila de atendimento IPR Brooklin</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        O próximo a atender é o disponível há mais tempo. <br /> Voltar da pausa ou terminar um atendimento
-        leva você para o fim da fila.
+        O próximo a atender é o disponível há mais tempo. <br /> Voltar da pausa ou terminar um
+        atendimento leva você para o fim da fila.
       </p>
     </>
   );
