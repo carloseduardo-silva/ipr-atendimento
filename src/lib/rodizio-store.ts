@@ -39,7 +39,7 @@ export const STATUS_EMOJI: Record<VendedorStatus, string> = {
   em_atendimento: "🤝",
   almoco: "🍱",
   pausa: "☕",
-  ausente: "⚪",
+  ausente: "",
 };
 
 export interface RodizioSnapshot {
