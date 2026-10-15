@@ -333,31 +333,13 @@ export async function moveVendedor(vendedorId: string, direction: "up" | "down")
 }
 
 /**
- * O próximo da fila assume o cliente. Relê a fila no banco antes: a tela pode
- * estar atrasada em relação a outro celular que acabou de mudar a ordem.
+ * O vendedor assume o cliente. Qualquer disponível pode iniciar, não só o 1º
+ * (ex.: cliente que procurou alguém específico): a tela pede confirmação para
+ * quem está fora da vez. Quem fica na frente não perde a posição, porque o
+ * `entrou_fila_em` dele não muda.
  */
 export async function iniciarAtendimento(vendedorId: string): Promise<void> {
   ensureInit();
-
-  const { data: proximo, error: proximoError } = await supabase
-    .from(VENDEDORES)
-    .select("id")
-    .eq("status", "disponivel")
-    .eq("ativo", true)
-    .order("entrou_fila_em", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (proximoError) {
-    reportError("Não foi possível conferir a fila.", proximoError);
-    return;
-  }
-
-  if ((proximo as { id: string } | null)?.id !== vendedorId) {
-    toast.warning("A fila mudou: você não é mais o próximo.");
-    await refetch();
-    return;
-  }
 
   // Reserva a vez: se outro aparelho já tirou este vendedor de `disponivel`,
   // o UPDATE não casa nenhuma linha.

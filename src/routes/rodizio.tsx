@@ -116,6 +116,7 @@ function RodizioPage() {
           <MeuStatusCard
             vendedor={meuVendedor}
             posicao={minhaPosicao}
+            proximoNome={fila[0]?.nome ?? null}
             onSetStatus={(status) => setStatus(meuVendedor.id, status)}
             onIniciar={() => iniciarAtendimento(meuVendedor.id)}
             onTrocar={trocar}
@@ -217,7 +218,8 @@ function Titulo() {
       <h1 className="text-2xl font-semibold text-foreground">Fila de atendimento IPR Brooklin</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         O próximo a atender é o disponível há mais tempo. <br /> Voltar da pausa ou terminar um
-        atendimento leva você para o fim da fila.
+        atendimento leva você para o fim da fila. <br /> Quem estiver disponível também pode iniciar
+        fora da vez, com confirmação.
       </p>
     </>
   );

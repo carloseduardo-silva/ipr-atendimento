@@ -1,5 +1,17 @@
 import { useState } from "react";
 import { PlayCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   STATUS_EMOJI,
@@ -15,6 +27,8 @@ interface MeuStatusCardProps {
   vendedor: VendedorRow;
   /** Posição 1-based na fila de disponíveis; 0 quando fora da fila. */
   posicao: number;
+  /** Nome do 1º da fila, citado na confirmação de quem inicia fora da vez. */
+  proximoNome: string | null;
   onSetStatus: (status: StatusManual) => Promise<void>;
   onIniciar: () => Promise<void>;
   /** Desvincula este celular do vendedor (celular emprestado, nome errado). */
@@ -24,6 +38,7 @@ interface MeuStatusCardProps {
 export function MeuStatusCard({
   vendedor,
   posicao,
+  proximoNome,
   onSetStatus,
   onIniciar,
   onTrocar,
@@ -116,6 +131,45 @@ export function MeuStatusCard({
           <PlayCircle className="h-5 w-5" />
           {pending ? "Iniciando…" : "Iniciar Atendimento"}
         </button>
+      ) : vendedor.status === "disponivel" ? (
+        // Fora da vez: permitido (cliente que procurou este vendedor), mas com
+        // confirmação para não virar atalho que fura a fila sem perceber.
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              type="button"
+              disabled={pending}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-primary/50 px-5 py-4 text-lg font-semibold text-primary transition hover:border-primary hover:bg-primary/5 disabled:opacity-60"
+            >
+              <PlayCircle className="h-5 w-5" />
+              {pending ? "Iniciando…" : "Iniciar Atendimento"}
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Iniciar fora da vez?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {proximoNome ? (
+                  <>
+                    <strong className="text-foreground">{proximoNome}</strong> é o próximo da fila.
+                    O atendimento será iniciado por você e {proximoNome} continua em 1º.
+                  </>
+                ) : (
+                  "Você não é o próximo da fila. O atendimento será iniciado por você e a ordem dos demais não muda."
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => void run(onIniciar)}
+                className={buttonVariants({ variant: "default" })}
+              >
+                Iniciar mesmo assim
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       ) : null}
     </section>
   );
