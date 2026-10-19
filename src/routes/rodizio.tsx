@@ -163,18 +163,16 @@ function RodizioPage() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="rodizio" className="mt-5">
-                  {/* Sem etapas aqui: a gerente vê a fila mesmo antes de se identificar. */}
+                  {/* Como no login de vendas: sem se identificar, só o "Quem é você".
+                      A aba Gestão continua acessível (ex.: para a gerente se cadastrar). */}
                   {etapa === "carregando" ? (
                     <p className="py-16 text-center text-sm text-muted-foreground" role="status">
                       Carregando…
                     </p>
+                  ) : etapa === "identificacao" ? (
+                    <QuemEVoceCard vendedores={snapshot.vendedores} onEscolher={escolher} />
                   ) : (
-                    <div className="space-y-5">
-                      {etapa === "identificacao" ? (
-                        <QuemEVoceCard vendedores={snapshot.vendedores} onEscolher={escolher} />
-                      ) : null}
-                      {rodizio}
-                    </div>
+                    rodizio
                   )}
                 </TabsContent>
                 <TabsContent value="gestao" className="mt-5">

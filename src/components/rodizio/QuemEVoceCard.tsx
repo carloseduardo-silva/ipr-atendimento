@@ -99,9 +99,9 @@ export function QuemEVoceCard({ vendedores, onEscolher }: QuemEVoceCardProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6 sm:mt-2 mt-6">
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Quem está usando este celular?
+        Quem está atendendo?
       </p>
 
       <label htmlFor={inputId} className="mt-3 block text-sm font-medium text-foreground">
