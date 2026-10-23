@@ -14,6 +14,10 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as EsperaRouteImport } from './routes/espera'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RodizioRouteImport } from './routes/rodizio'
+import { Route as AtendimentoIndexRouteImport } from './routes/atendimento/index'
+import { Route as AtendimentoLoginRouteImport } from './routes/atendimento/login'
+import { Route as VendasIndexRouteImport } from './routes/vendas/index'
+import { Route as VendasLoginRouteImport } from './routes/vendas/login'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +44,26 @@ const RodizioRoute = RodizioRouteImport.update({
   path: '/rodizio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtendimentoIndexRoute = AtendimentoIndexRouteImport.update({
+  id: '/atendimento/',
+  path: '/atendimento/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AtendimentoLoginRoute = AtendimentoLoginRouteImport.update({
+  id: '/atendimento/login',
+  path: '/atendimento/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendasIndexRoute = VendasIndexRouteImport.update({
+  id: '/vendas/',
+  path: '/vendas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendasLoginRoute = VendasLoginRouteImport.update({
+  id: '/vendas/login',
+  path: '/vendas/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +71,10 @@ export interface FileRoutesByFullPath {
   '/espera': typeof EsperaRoute
   '/login': typeof LoginRoute
   '/rodizio': typeof RodizioRoute
+  '/atendimento/login': typeof AtendimentoLoginRoute
+  '/vendas/login': typeof VendasLoginRoute
+  '/atendimento/': typeof AtendimentoIndexRoute
+  '/vendas/': typeof VendasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +82,10 @@ export interface FileRoutesByTo {
   '/espera': typeof EsperaRoute
   '/login': typeof LoginRoute
   '/rodizio': typeof RodizioRoute
+  '/atendimento/login': typeof AtendimentoLoginRoute
+  '/vendas/login': typeof VendasLoginRoute
+  '/atendimento': typeof AtendimentoIndexRoute
+  '/vendas': typeof VendasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +94,45 @@ export interface FileRoutesById {
   '/espera': typeof EsperaRoute
   '/login': typeof LoginRoute
   '/rodizio': typeof RodizioRoute
+  '/atendimento/login': typeof AtendimentoLoginRoute
+  '/vendas/login': typeof VendasLoginRoute
+  '/atendimento/': typeof AtendimentoIndexRoute
+  '/vendas/': typeof VendasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/espera' | '/login' | '/rodizio'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/espera'
+    | '/login'
+    | '/rodizio'
+    | '/atendimento/login'
+    | '/vendas/login'
+    | '/atendimento/'
+    | '/vendas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/espera' | '/login' | '/rodizio'
-  id: '__root__' | '/' | '/admin' | '/espera' | '/login' | '/rodizio'
+  to:
+    | '/'
+    | '/admin'
+    | '/espera'
+    | '/login'
+    | '/rodizio'
+    | '/atendimento/login'
+    | '/vendas/login'
+    | '/atendimento'
+    | '/vendas'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/espera'
+    | '/login'
+    | '/rodizio'
+    | '/atendimento/login'
+    | '/vendas/login'
+    | '/atendimento/'
+    | '/vendas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +141,10 @@ export interface RootRouteChildren {
   EsperaRoute: typeof EsperaRoute
   LoginRoute: typeof LoginRoute
   RodizioRoute: typeof RodizioRoute
+  AtendimentoLoginRoute: typeof AtendimentoLoginRoute
+  VendasLoginRoute: typeof VendasLoginRoute
+  AtendimentoIndexRoute: typeof AtendimentoIndexRoute
+  VendasIndexRoute: typeof VendasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +184,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RodizioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/atendimento/': {
+      id: '/atendimento/'
+      path: '/atendimento'
+      fullPath: '/atendimento/'
+      preLoaderRoute: typeof AtendimentoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/atendimento/login': {
+      id: '/atendimento/login'
+      path: '/atendimento/login'
+      fullPath: '/atendimento/login'
+      preLoaderRoute: typeof AtendimentoLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendas/': {
+      id: '/vendas/'
+      path: '/vendas'
+      fullPath: '/vendas/'
+      preLoaderRoute: typeof VendasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendas/login': {
+      id: '/vendas/login'
+      path: '/vendas/login'
+      fullPath: '/vendas/login'
+      preLoaderRoute: typeof VendasLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +221,10 @@ const rootRouteChildren: RootRouteChildren = {
   EsperaRoute: EsperaRoute,
   LoginRoute: LoginRoute,
   RodizioRoute: RodizioRoute,
+  AtendimentoLoginRoute: AtendimentoLoginRoute,
+  VendasLoginRoute: VendasLoginRoute,
+  AtendimentoIndexRoute: AtendimentoIndexRoute,
+  VendasIndexRoute: VendasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
